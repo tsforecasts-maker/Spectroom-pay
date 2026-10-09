@@ -5,7 +5,7 @@
   var BOT = "iSpectrumAccessBot";
   var T = {
     en: {
-      h1: "Access and screenshots", lead: "Pay by crypto or card. After payment you get an access key that activates in @iSpectrumAccessBot.",
+      h1: "Access and screenshots", lead: "Licence: pay by crypto or card. Screenshots and balance: crypto only. After payment you get an access key that activates in @iSpectrumAccessBot.",
       closed: "Payments are temporarily unavailable. Please check back later.",
       sub_title: "iSpectrum licence — 30 days", sub_per: "/ 30 days",
       sub_i1: "iSpectrum indicator for MT4 (MT5 EA coming)", sub_i2: "Download, MT4 account activation and licence management via @iSpectrumAccessBot", sub_i3: "Included: Private Research channel and Tutorials",
@@ -13,8 +13,8 @@
       pay_crypto: "Pay with crypto (USDT/USDC)", pay_card: "Pay by card (Whop)",
       scr_title: "Projection screenshots", scr_desc: "A current M30 chart of one instrument (BTCUSD, EURUSD, GBPUSD, HK50, NAS100, US500, WTI, XAUUSD) with the iSpectrum projection lines, as published in the channel. No commentary. You choose the instrument in the bot.",
       o1: "1 screenshot", o10: "10 screenshots", otop: "Balance",
-      scr_note: "Screenshots and balance are credited to your account in the bot when you activate the key. The balance is used only for screenshots and is not withdrawable. Minimum top-up: 10 USDT.",
-      how_title: "How it works", how1: "Choose an option and pay on the Crypto Pay or Whop page.", how2: "Return to this page: your access key appears here.",
+      scr_note: "Screenshots and balance are credited to your account in the bot when you activate the key. The balance is used only for screenshots and is not withdrawable. Minimum top-up: 10 USDT. Payment: crypto only (USDT/USDC).",
+      how_title: "How it works", how1: "Choose an option and pay on the Crypto Pay page (the licence can also be paid by card on Whop).", how2: "Return to this page: your access key appears here.",
       how3: "Tap “Open bot with key”, or send the key to @iSpectrumAccessBot → 🔑 Activate key.",
       st_title: "Your order", wait: "Waiting for payment confirmation…", waitnote: "This page checks the status automatically. You can close it and come back later on this device.",
       paid: "Payment received. Your access key:", copy: "Copy key", copied: "Copied", open_bot: "Open bot with key",
@@ -26,7 +26,7 @@
       terms: "Terms", privacy: "Privacy", starting: "Opening the payment page…",
     },
     ru: {
-      h1: "Доступ и скриншоты", lead: "Оплата криптовалютой или картой. После оплаты вы получите ключ доступа, который активируется в @iSpectrumAccessBot.",
+      h1: "Доступ и скриншоты", lead: "Лицензия: оплата криптовалютой или картой. Скриншоты и баланс: только криптовалютой. После оплаты вы получите ключ доступа, который активируется в @iSpectrumAccessBot.",
       closed: "Оплата временно недоступна. Пожалуйста, зайдите позже.",
       sub_title: "Лицензия iSpectrum — 30 дней", sub_per: "/ 30 дней",
       sub_i1: "Индикатор iSpectrum для MT4 (советник для MT5 — скоро)", sub_i2: "Скачивание, активация счёта MT4 и управление лицензией через @iSpectrumAccessBot", sub_i3: "В комплекте: канал Private Research и Tutorials",
@@ -34,8 +34,8 @@
       pay_crypto: "Оплатить криптой (USDT/USDC)", pay_card: "Оплатить картой (Whop)",
       scr_title: "Скриншоты проекций", scr_desc: "Актуальный график M30 одного инструмента (BTCUSD, EURUSD, GBPUSD, HK50, NAS100, US500, WTI, XAUUSD) с линиями проекции iSpectrum, как в канале. Без комментариев. Инструмент выбирается в боте.",
       o1: "1 скриншот", o10: "10 скриншотов", otop: "Баланс",
-      scr_note: "Скриншоты и баланс зачисляются на ваш аккаунт в боте при активации ключа. Баланс используется только для скриншотов и не выводится. Минимальное пополнение: 10 USDT.",
-      how_title: "Как это работает", how1: "Выберите вариант и оплатите на странице Crypto Pay или Whop.", how2: "Вернитесь на эту страницу: здесь появится ключ доступа.",
+      scr_note: "Скриншоты и баланс зачисляются на ваш аккаунт в боте при активации ключа. Баланс используется только для скриншотов и не выводится. Минимальное пополнение: 10 USDT. Оплата: только криптовалютой (USDT/USDC).",
+      how_title: "Как это работает", how1: "Выберите вариант и оплатите на странице Crypto Pay (лицензию можно оплатить и картой на Whop).", how2: "Вернитесь на эту страницу: здесь появится ключ доступа.",
       how3: "Нажмите «Открыть бот с ключом» или отправьте ключ в @iSpectrumAccessBot → 🔑 Активировать ключ.",
       st_title: "Ваш заказ", wait: "Ожидаем подтверждение оплаты…", waitnote: "Страница проверяет статус автоматически. Можно закрыть её и вернуться позже на этом устройстве.",
       paid: "Оплата получена. Ваш ключ доступа:", copy: "Скопировать ключ", copied: "Скопировано", open_bot: "Открыть бот с ключом",
@@ -52,6 +52,8 @@
   if (!T[lang]) lang = "en";
   var $ = function (s) { return document.querySelector(s); }, $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
   function t(k) { return T[lang][k]; }
+  // card payments (Whop) are for the 30-day licence only; screenshots and balance are crypto only
+  $$("[data-method=whop]").forEach(function (b) { if (b.getAttribute("data-buy") !== "sub30") b.parentNode.removeChild(b); });
   function render() {
     document.documentElement.lang = lang;
     $$("[data-t]").forEach(function (el) { el.textContent = t(el.getAttribute("data-t")); });
@@ -113,12 +115,13 @@
         if (x.code === 200 && x.j.pay_url) {
           var list = saved(); list.push({ id: x.j.id, token: x.j.token, at: Date.now() }); save(list);
           location.href = x.j.pay_url;   // leave for the provider page (browser); it returns to ?o=<id>
-        } else $("#st_body").textContent = x.j.status === "method_unavailable" ? t("unavailable") : x.j.status === "rate_limited" ? t("busy") : x.j.status === "closed" ? t("closed") : t("failed");
+        } else $("#st_body").textContent = (x.j.status === "method_unavailable" || x.j.status === "method_not_offered") ? t("unavailable") : x.j.status === "rate_limited" ? t("busy") : x.j.status === "closed" ? t("closed") : t("failed");
       }).catch(function () { $("#st_body").textContent = t("failed"); });
   }
   $$("[data-buy]").forEach(function (b) {
     b.addEventListener("click", function () {
       var m = b.getAttribute("data-method");
+      if (m === "whop" && b.getAttribute("data-buy") !== "sub30") return;
       if (b.getAttribute("data-buy") === "sub30") start("sub30", m); else start(sel.p, m, sel.usd);
     });
   });
