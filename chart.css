@@ -6,7 +6,7 @@ body.chartpage .wrap{max-width:1120px}
 .sym.lock{color:var(--mute)}.sym.lock small{color:var(--mute)}
 .sym.on{border-color:var(--acc);background:var(--acc2);color:var(--acc)}
 .chartcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 10px 8px;margin:0 0 14px}
-.legend{display:flex;flex-wrap:nowrap;gap:2px 4px;overflow-x:auto;background:#FCFCFC;border:1px solid #ACACAC;border-radius:3px;padding:2px 4px;margin:0 0 8px;min-height:22px;scrollbar-width:thin}
+.legend{flex:1 1 auto;min-width:0;display:flex;flex-wrap:nowrap;gap:2px 4px;overflow-x:auto;background:#FCFCFC;border:1px solid #ACACAC;border-radius:3px;padding:2px 4px;margin:0;min-height:22px;scrollbar-width:thin}
 .legend[hidden]{display:none}
 .lg{flex:0 0 auto;display:flex;align-items:center;gap:5px;border:0;background:none;padding:1px 6px 1px 3px;font:13px/16px Arial,Helvetica,sans-serif;color:#1E1E1E;cursor:pointer;border-radius:3px;white-space:nowrap}
 .lg:hover{background:#EEF2F7}
@@ -34,6 +34,7 @@ body.chartpage .wrap{max-width:1120px}
 .dtab{display:flex;align-items:center;gap:3px;padding:0 6px 0 5px;border-right:1px solid #C4C4C4}
 .dtab.on{background:#F4F4F4;margin-bottom:-1px;border-bottom:1px solid #F4F4F4}
 .dtab input{margin:0;width:13px;height:13px;accent-color:#3C6EB4}
+.dtab.nocb{padding-left:7px}
 .dtabl{border:0;background:none;font:inherit;font-weight:700;color:#1E1E1E;padding:5px 2px;cursor:pointer}
 .dtab:not(.on) .dtabl{font-weight:400;color:#444}
 .dcol{margin-left:auto;border:0;border-left:1px solid #C4C4C4;background:none;font:14px/1 Arial,sans-serif;padding:0 10px;cursor:pointer;color:#444}
@@ -63,3 +64,29 @@ body.chartpage .wrap{max-width:1120px}
 .cti.candles::after{content:"";position:absolute;left:1px;top:3px;width:5px;height:5px;border:1px solid #555;background:#FFF}
 .cti.bars::before{content:"";position:absolute;left:4px;top:0;width:1px;height:12px;background:#555}
 .cti.bars::after{content:"";position:absolute;left:1px;top:3px;width:3px;height:1px;background:#555;box-shadow:5px 5px 0 #555}
+/* v5: legend row + tools (screenshot, fullscreen) */
+.lgrow{display:flex;align-items:stretch;gap:6px;margin:0 0 8px}
+.lgrow .legend[hidden]+.tools{margin-left:auto}
+.tools{flex:0 0 auto;display:flex;gap:4px;align-self:flex-start}
+.tb{display:flex;align-items:center;justify-content:center;width:30px;height:26px;border:1px solid #ACACAC;border-radius:3px;background:#FFF;color:#3A3A3A;cursor:pointer;padding:0}
+.tb:hover{border-color:#3C6EB4;color:#123A73;background:#EEF3FA}
+.tb:disabled{opacity:.4;cursor:default}
+.tb.busy{opacity:.55;cursor:progress}
+.tb .fs-off{display:none}
+.stage.fs .tb .fs-on{display:none}.stage.fs .tb .fs-off{display:block}
+/* v5: iSpectrum watermark, top-left of the plot (TradingView attribution stays bottom-left) */
+.wmark{position:absolute;left:10px;top:8px;z-index:3;display:flex;align-items:center;gap:6px;opacity:.32;pointer-events:none;user-select:none;-webkit-user-select:none}
+.wmark img{display:block;width:auto;height:22px;filter:grayscale(.35)}
+.wmark span{font:700 17px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#1E2A44;letter-spacing:.2px}
+@media (max-width:600px){.wmark{left:6px;top:5px}.wmark img{height:17px}.wmark span{font-size:14px}.tb{width:34px;height:30px}}
+/* v5: fullscreen (Fullscreen API on .stage; .fs class also = CSS fallback for iOS Safari) */
+.stage.fs{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;background:var(--bg);padding:6px 8px calc(6px + env(safe-area-inset-bottom)) 8px;height:100vh;height:100dvh;overflow:hidden;box-sizing:border-box}
+.stage:fullscreen{background:var(--bg)}
+.stage.fs .syms{flex:0 0 auto;padding:0 0 6px}
+.stage.fs .chartcard{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;margin:0;padding:6px 6px 4px}
+.stage.fs .dash,.stage.fs .lgrow,.stage.fs .meta{flex:0 0 auto}
+.stage.fs .chartbox{flex:1 1 auto;min-height:0}
+.stage.fs #chart{height:100%}
+.stage.fs .meta{margin-top:3px;min-height:0;font-size:11.5px}
+body.fslock{overflow:hidden;overscroll-behavior:none}
+@media (max-width:600px){.stage.fs{padding:4px 4px calc(4px + env(safe-area-inset-bottom))}.stage.fs .chartcard{padding:4px 3px 3px}.stage.fs .dstatus,.stage.fs .dtrim{display:none}}

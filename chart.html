@@ -19,13 +19,21 @@
   <h1 data-t="h1"></h1>
   <p class="lead" data-t="lead"></p>
 
+  <div class="stage" id="stage">
   <div class="syms" id="syms" role="tablist"></div>
 
   <section class="chartcard">
     <div class="dash" id="dash" hidden></div>
-    <div class="legend" id="legend" aria-label="lines"></div>
+    <div class="lgrow">
+      <div class="legend" id="legend" aria-label="lines"></div>
+      <div class="tools">
+        <button type="button" class="tb" id="shotbtn" data-tt="shot_tip"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M4 8h3.2l1.6-2.4h6.4L16.8 8H20v11H4z"/><circle cx="12" cy="13.2" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
+        <button type="button" class="tb" id="fsbtn" data-tt="fs_tip"><svg class="fs-on" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><svg class="fs-off" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg></button>
+      </div>
+    </div>
     <div class="chartbox">
       <div id="chart"></div>
+      <div class="wmark" aria-hidden="true"><img src="logo_mark.png" alt="" width="97" height="68"><span>iSpectrum</span></div>
       <div class="overlay" id="overlay" hidden>
         <div class="ovbox">
           <p class="ovtitle" id="ov_title"></p>
@@ -36,6 +44,7 @@
     </div>
     <p class="meta" id="meta"></p>
   </section>
+  </div>
 
   <section class="card keycard">
     <h2 data-t="key_title"></h2>

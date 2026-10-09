@@ -32,6 +32,9 @@
       status: "iSpectrum | {s} v{v} | updated {u}",
       trim_note: "Free view: Intraday, Middle, Seasonal and the background end with the current week ({d}). The full horizon opens with an access key.",
       candles: "Candles", bars: "Bars", ctype_tip: "Price display: candles or OHLC bars",
+      shot_tip: "Save a PNG of the current chart view", fs_tip: "Full screen (Esc to exit)", fs_exit: "Exit full screen (Esc)",
+      shot_title: "{s} · M30 · iSpectrum projection", shot_meta: "Saved {n} MSK · last M30 bar {b} MSK (MT4 prices) · package {v}",
+      shot_sig: "Not a trading signal.", shot_disc: "Model-based projection for information only; not investment advice. Times in MSK (broker server time).",
       disc_b: "Not investment advice.", disc: "iSpectrum shows model-based projections for information only. They are not trading signals and do not guarantee future prices. Trading involves risk.",
       times: "All times MSK (UTC+3), broker server time.", prices: "Prices: MT4 feed.", tv1: "Chart library:", home: "Licence and screenshots", terms: "Terms", privacy: "Privacy",
     },
@@ -61,6 +64,9 @@
       status: "iSpectrum | {s} v{v} | обновлён {u}",
       trim_note: "Бесплатный просмотр: Intraday, Middle, Seasonal и фон показаны до конца текущей недели ({d}). Полный горизонт открывается ключом доступа.",
       candles: "Свечи", bars: "Бары", ctype_tip: "Вид цены: свечи или бары OHLC",
+      shot_tip: "Сохранить PNG текущего вида графика", fs_tip: "Во весь экран (Esc — выход)", fs_exit: "Выйти из полноэкранного режима (Esc)",
+      shot_title: "{s} · M30 · проекция iSpectrum", shot_meta: "Сохранено {n} МСК · последний бар M30 {b} МСК (цены MT4) · пакет {v}",
+      shot_sig: "Не торговый сигнал.", shot_disc: "Модельная проекция только для информации; не инвестиционная рекомендация. Время МСК (время сервера брокера).",
       disc_b: "Не является инвестиционной рекомендацией.", disc: "iSpectrum показывает модельные проекции только для информации. Это не торговые сигналы и не гарантия будущих цен. Торговля связана с риском.",
       times: "Всё время указано по МСК (UTC+3), время сервера брокера.", prices: "Цены: поток MT4.", tv1: "Библиотека графиков:", home: "Лицензия и скриншоты", terms: "Условия", privacy: "Конфиденциальность",
     },
@@ -192,8 +198,8 @@
     order.forEach(function (nm) {
       var l = byName[nm]; if (!l) return;
       var parts = [], width = l.width;
-      if (nm === "Intraday") width = Math.max(2, Math.min(5, width));
-      width = thin(width);
+      // v5: Intraday is exempt from the thinning (drawn 2..5 = package width, today 2 px like Stable / Week / Comp after thinning)
+      width = nm === "Intraday" ? Math.max(2, Math.min(5, width | 0 || 2)) : thin(width);
       if (nm === "Intraday" && l.fit && l.fit.length > 1) {
         var lbc = l.lbc || (l.points.length ? l.points[0][0] : Infinity);
         var fit = resample(l.fit.filter(function (q) { return q[0] <= lbc; }), axis);
@@ -400,17 +406,21 @@
     if (!p) { root.hidden = true; return; }
     root.hidden = false;
     var st = ds();
-    // row 1: tabs (checkbox = background on Middle / Seasonal; disabled on Intraday / Week) + collapse arrow
+    // row 1: tabs (checkbox = background, Middle / Seasonal only; v5: none on Intraday / Week) + collapse arrow
     var tabs = el("div", "dtabs");
     TABS.forEach(function (n) {
       var tb = el("div", "dtab" + (st.tab === n && st.open ? " on" : ""));
-      var bgTab = n === "Middle" || n === "Seasonal", cb = document.createElement("input");
-      cb.type = "checkbox"; cb.disabled = !bgTab; cb.checked = bgTab && (n === "Middle" ? st.hm : st.hs);
-      cb.title = bgTab ? t("tab_bg", { n: n }) : t("tab_nobg"); cb.setAttribute("aria-label", cb.title);
-      if (bgTab) cb.addEventListener("change", function () { dsSet(n === "Middle" ? "hm" : "hs", cb.checked); draw(data, true); });
+      var bgTab = n === "Middle" || n === "Seasonal";
+      if (bgTab) {
+        var cb = document.createElement("input");
+        cb.type = "checkbox"; cb.checked = n === "Middle" ? st.hm : st.hs;
+        cb.title = t("tab_bg", { n: n }); cb.setAttribute("aria-label", cb.title);
+        cb.addEventListener("change", function () { dsSet(n === "Middle" ? "hm" : "hs", cb.checked); draw(data, true); });
+        tb.appendChild(cb);
+      } else tb.classList.add("nocb");
       var lb = el("button", "dtabl", n); lb.type = "button";
       lb.addEventListener("click", function () { dsSet("tab", n); dsSet("open", true); renderDash(); });
-      tb.appendChild(cb); tb.appendChild(lb); tabs.appendChild(tb);
+      tb.appendChild(lb); tabs.appendChild(tb);
     });
     var col = el("button", "dcol", st.open ? "▴" : "▾"); col.type = "button"; col.title = t("collapse");
     col.addEventListener("click", function () { dsSet("open", !st.open); renderDash(); });
@@ -525,7 +535,7 @@
     lg.appendChild(ct);
   }
   function renderMeta() {
-    var m = $("#meta");
+    var m = $("#meta"), sb = $("#shotbtn"); if (sb) sb.disabled = !(data && data.package);
     if (!data) { m.textContent = ""; return; }
     var p = data.package;
     if (!p) { m.textContent = t("nopkg"); return; }
@@ -543,6 +553,8 @@
       b.addEventListener("click", function () { if (s === sym) return; sym = s; localStorage.setItem("isp_chart_sym", s); renderSyms(); load(false); });
       w.appendChild(b);
     });
+    var on = w.querySelector(".sym.on");   // v5: keep the selected instrument visible in the scrolling row (mobile / fullscreen)
+    if (on) { var wr = w.getBoundingClientRect(), br = on.getBoundingClientRect(); if (br.left < wr.left || br.right > wr.right) w.scrollLeft += br.left - wr.left - (wr.width - br.width) / 2; }
   }
   function overlay(kind, extra) {
     var o = $("#overlay");
@@ -553,7 +565,7 @@
     if (kind === "lock" || kind === "bad") {
       title.textContent = t(kind === "lock" ? "lock_t" : "bad_t", { s: sym }); text.textContent = kind === "lock" ? t("lock_x", { f: fl }) : t("bad_x");
       btn(t("get"), "", null, "./" + (lang === "ru" ? "?lang=ru" : ""));
-      btn(t("enter"), "alt", function () { $("#keyin").focus(); $("#keyin").scrollIntoView({ block: "center", behavior: "smooth" }); });
+      btn(t("enter"), "alt", function () { if (fsOn()) fsExit(); $("#keyin").focus(); $("#keyin").scrollIntoView({ block: "center", behavior: "smooth" }); });
       if (free.length) btn(t("open_free", { s: free[0] }), "alt", function () { sym = free[0]; renderSyms(); load(false); });
     } else if (kind === "busy") { title.textContent = t("busy_t"); text.textContent = t("busy_x", { n: extra || 60 }); btn(t("retry"), "", function () { load(false); }); }
     else if (kind === "loading") { title.textContent = t("loading"); text.textContent = ""; }
@@ -606,10 +618,99 @@
     $("#keymsg").textContent = t("key_gone"); $("#keymsg").className = "note"; renderSyms(); load(false);
   });
 
+  // ---------------- v5: screenshot (PNG of the current view, sold-screenshot layout) ----------------
+  var logoImg = new Image(); logoImg.src = "logo_t.png";   // same origin: the canvas stays exportable
+  function siteLink() {
+    var h = location.host;
+    if (!h || /^(localhost|127\.|\[::1\])/.test(h)) return "tsforecasts-maker.github.io/Spectroom-pay";
+    return (h + location.pathname.replace(/[^\/]*$/, "")).replace(/\/$/, "");
+  }
+  function shotLegend() {
+    var out = [];
+    LG_ORDER.forEach(function (n) {
+      if (n === "Background" || !idsFor(n).length || !isOn(n)) return;
+      var L = layers.filter(function (x) { return x.name === n; })[0];
+      out.push(n === "Envelope" ? { n: n, c: "#A06E46", w: 1, st: 0 } : { n: n, c: L.color, w: L.width, st: L.style });
+    });
+    return out;
+  }
+  function takeShot() {
+    if (!data || !data.package) return;
+    var btn = $("#shotbtn"); btn.classList.add("busy");
+    try {
+      var cv = chart.takeScreenshot(), S = cv.width / Math.max(1, box.clientWidth);
+      var HD = Math.round(62 * S), FT = Math.round(58 * S), Wd = cv.width, Hh = cv.height + HD + FT;
+      var o = document.createElement("canvas"); o.width = Wd; o.height = Hh;
+      var g = o.getContext("2d"), F = "Arial,Helvetica,sans-serif", tz = lang === "ru" ? " МСК" : " MSK";
+      var px = function (n) { return Math.round(n * S) + "px "; };
+      g.fillStyle = "#FFFFFF"; g.fillRect(0, 0, Wd, Hh);
+      g.drawImage(cv, 0, HD);
+      g.strokeStyle = "#C8C8C8"; g.lineWidth = Math.max(1, Math.round(S)); g.strokeRect(0.5, HD + 0.5, Wd - 1, cv.height - 1);
+      var p = data.package, nowS = Math.floor(Date.now() / 1000);
+      // header: title + meta (left), channel link (right), legend of the visible lines (right, line 2)
+      g.textBaseline = "alphabetic"; g.fillStyle = "#1E1E1E"; g.font = "bold " + px(19) + F;
+      g.fillText(t("shot_title", { s: sym }), 12 * S, 26 * S);
+      g.font = px(12) + F; g.fillStyle = "#555";
+      g.fillText(t("shot_meta", { n: fmtReal(nowS, true), b: data.last_bar_t ? fmtSrv(data.last_bar_t) : "—", v: String(p.version) }), 12 * S, 48 * S);
+      g.textAlign = "right"; g.fillStyle = "#1E5AA0"; g.font = px(13) + F; g.fillText("t.me/iSpectrum_roadmaps", Wd - 12 * S, 24 * S);
+      var lx = Wd - 12 * S, items = shotLegend().reverse();
+      g.font = px(12) + F;
+      items.forEach(function (it) {
+        var tw = g.measureText(it.n).width; g.fillStyle = "#1E1E1E"; g.fillText(it.n, lx, 48 * S); lx -= tw + 5 * S;
+        var w = (it.st ? 1 : Math.max(1, Math.min(6, it.w))) * S, x0 = lx - 18 * S; g.fillStyle = it.c;
+        if (!it.st) g.fillRect(x0, 44 * S - w / 2, 18 * S, w); else for (var k = 0; k < 18; k += 5) g.fillRect(x0 + k * S, 44 * S - S / 2, 3 * S, S);
+        lx = x0 - 12 * S;
+      });
+      g.textAlign = "left";
+      // watermark on the plot: dimmed logo + channel link (as the sold screenshots)
+      g.save(); g.globalAlpha = 0.34;
+      if (logoImg.complete && logoImg.naturalWidth) { var lh = 30 * S; g.drawImage(logoImg, 10 * S, HD + 8 * S, lh * logoImg.naturalWidth / logoImg.naturalHeight, lh); }
+      g.globalAlpha = 0.38; g.fillStyle = "#1E1E1E"; g.font = "bold " + px(14) + F; g.fillText("t.me/iSpectrum_roadmaps", 12 * S, HD + 56 * S);
+      g.restore();
+      // footer: not a trading signal + disclaimer + links
+      var fy = HD + cv.height;
+      g.font = "bold " + px(13) + F; g.fillStyle = "#A02828"; var sig = t("shot_sig"); g.fillText(sig, 12 * S, fy + 22 * S);
+      var sx = 12 * S + g.measureText(sig).width + 8 * S; g.font = px(12) + F; g.fillStyle = "#555";
+      g.fillText(t("shot_disc"), sx, fy + 22 * S, Wd - sx - 12 * S);
+      g.fillStyle = "#888"; g.fillText("t.me/iSpectrum_roadmaps · @iSpectrumAccessBot · " + siteLink(), 12 * S, fy + 44 * S);
+      g.textAlign = "right"; g.fillStyle = "#AAA"; g.font = px(10.5) + F; g.fillText("Chart: TradingView Lightweight Charts™", Wd - 12 * S, fy + 44 * S); g.textAlign = "left";
+      var nm = "iSpectrum_" + sym + "_M30_" + fmtReal(nowS, true).replace(/^(\d\d)\.(\d\d)\.(\d{4}) (\d\d):(\d\d)$/, "$3-$2-$1_$4$5") + "MSK.png";
+      var save = function (url, rel) { var a = document.createElement("a"); a.href = url; a.download = nm; document.body.appendChild(a); a.click(); a.remove(); if (rel) setTimeout(function () { URL.revokeObjectURL(url); }, 4000); btn.classList.remove("busy"); };
+      if (o.toBlob) o.toBlob(function (b) { if (b) save(URL.createObjectURL(b), true); else save(o.toDataURL("image/png")); }, "image/png");
+      else save(o.toDataURL("image/png"));
+    } catch (e) { btn.classList.remove("busy"); }
+  }
+  $("#shotbtn").addEventListener("click", takeShot);
+
+  // ---------------- v5: fullscreen (Fullscreen API, CSS fallback for iOS Safari) ----------------
+  var stage = $("#stage"), fsCss = false;
+  function fsEl() { return document.fullscreenElement || document.webkitFullscreenElement || null; }
+  function fsOn() { return fsCss || fsEl() === stage; }
+  function fsSync() {
+    var on = fsOn(), b = $("#fsbtn");
+    stage.classList.toggle("fs", on); document.body.classList.toggle("fslock", on);
+    b.title = t(on ? "fs_exit" : "fs_tip"); b.setAttribute("aria-label", b.title); b.setAttribute("aria-pressed", on ? "true" : "false");
+  }
+  function fsEnter() {
+    var rq = stage.requestFullscreen || stage.webkitRequestFullscreen;
+    var css = function () { fsCss = true; fsSync(); };
+    if (!rq) return css();
+    try { var r = rq.call(stage, { navigationUI: "hide" }); if (r && r.catch) r.catch(css); } catch (e) { css(); }
+  }
+  function fsExit() {
+    if (fsCss) { fsCss = false; fsSync(); return; }
+    var ex = document.exitFullscreen || document.webkitExitFullscreen; if (ex && fsEl()) try { ex.call(document); } catch (e) {}
+  }
+  $("#fsbtn").addEventListener("click", function () { if (fsOn()) fsExit(); else fsEnter(); });
+  document.addEventListener("fullscreenchange", fsSync); document.addEventListener("webkitfullscreenchange", fsSync);
+  document.addEventListener("keydown", function (e) { if ((e.key === "Escape" || e.key === "Esc") && fsCss) fsExit(); });
+
   // ---------------- language ----------------
   function render() {
     document.documentElement.lang = lang;
     $$("[data-t]").forEach(function (e) { e.textContent = t(e.getAttribute("data-t")); });
+    $$("[data-tt]").forEach(function (e) { e.title = t(e.getAttribute("data-tt")); e.setAttribute("aria-label", e.title); });
+    fsSync();
     $$(".lang button").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-lang") === lang); });
     chart.applyOptions({ localization: { locale: lang === "ru" ? "ru-RU" : "en-GB" } });
     renderSyms(); renderLegend(); renderMeta(); renderDash(); keyMsg();
