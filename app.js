@@ -6,7 +6,7 @@
   var T = {
     en: {
       h1: "Access and screenshots", lead: "Pay by crypto or card. After payment you get an access key that activates in @iSpectrumAccessBot.",
-      closed: "Payments on this page are not open yet. This is a preview.",
+      closed: "Payments are temporarily unavailable. Please check back later.",
       sub_title: "iSpectrum licence — 30 days", sub_per: "/ 30 days",
       sub_i1: "iSpectrum indicator for MT4 (MT5 EA coming)", sub_i2: "Download, MT4 account activation and licence management via @iSpectrumAccessBot", sub_i3: "Included: Private Research channel and Tutorials",
       sub_note: "A key adds 30 days. If you already have an active licence, the days are added to its end date.",
@@ -27,7 +27,7 @@
     },
     ru: {
       h1: "Доступ и скриншоты", lead: "Оплата криптовалютой или картой. После оплаты вы получите ключ доступа, который активируется в @iSpectrumAccessBot.",
-      closed: "Оплата на этой странице ещё не открыта. Это предварительный просмотр.",
+      closed: "Оплата временно недоступна. Пожалуйста, зайдите позже.",
       sub_title: "Лицензия iSpectrum — 30 дней", sub_per: "/ 30 дней",
       sub_i1: "Индикатор iSpectrum для MT4 (советник для MT5 — скоро)", sub_i2: "Скачивание, активация счёта MT4 и управление лицензией через @iSpectrumAccessBot", sub_i3: "В комплекте: канал Private Research и Tutorials",
       sub_note: "Ключ добавляет 30 дней. Если лицензия уже активна, дни добавляются к дате её окончания.",
