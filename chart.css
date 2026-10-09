@@ -53,3 +53,13 @@ body.chartpage .wrap{max-width:1120px}
 .dstatus{color:#555;font-size:12px;margin:4px 2px 0}
 .dtrim{color:#7A5A12;background:#FFF8E6;border:1px solid #EBD9A8;border-radius:3px;font-size:12px;padding:3px 7px;margin:4px 0 0}
 @media (max-width:600px){.dleft{flex-basis:100%}.dtab{padding:0 4px 0 3px}.dtabl{font-size:12px;padding:6px 1px}.gauge{padding-top:2px}.dplate{min-width:0;flex:1 1 140px}.db{min-height:28px}.db.sq{min-width:28px}}
+/* Candles / Bars toggle (right end of the legend row) */
+.ctype{flex:0 0 auto;display:flex;margin-left:auto;border:1px solid #ACACAC;border-radius:3px;overflow:hidden;background:#FFF}
+.ct{display:flex;align-items:center;gap:4px;border:0;background:none;font:12.5px/16px Arial,Helvetica,sans-serif;color:#444;padding:1px 7px;cursor:pointer;white-space:nowrap}
+.ct+.ct{border-left:1px solid #C4C4C4}
+.ct.on{background:#D6E4F5;color:#123A73;font-weight:700}
+.cti{display:inline-block;position:relative;width:9px;height:12px}
+.cti.candles::before{content:"";position:absolute;left:4px;top:0;width:1px;height:12px;background:#555}
+.cti.candles::after{content:"";position:absolute;left:1px;top:3px;width:5px;height:5px;border:1px solid #555;background:#FFF}
+.cti.bars::before{content:"";position:absolute;left:4px;top:0;width:1px;height:12px;background:#555}
+.cti.bars::after{content:"";position:absolute;left:1px;top:3px;width:3px;height:1px;background:#555;box-shadow:5px 5px 0 #555}

@@ -30,7 +30,8 @@
       in_bg: "part of the background", not_bg: "not part of the background",
       gauge_tip: "iSpectrum bull/bear gauge (Intraday and Week as the administrator, Middle / Seasonal as your background boxes)",
       status: "iSpectrum | {s} v{v} | updated {u}",
-      trim_note: "Free view: Middle, Seasonal and the background end with the current week ({d}). The full horizon opens with an access key.",
+      trim_note: "Free view: Intraday, Middle, Seasonal and the background end with the current week ({d}). The full horizon opens with an access key.",
+      candles: "Candles", bars: "Bars", ctype_tip: "Price display: candles or OHLC bars",
       disc_b: "Not investment advice.", disc: "iSpectrum shows model-based projections for information only. They are not trading signals and do not guarantee future prices. Trading involves risk.",
       times: "All times MSK (UTC+3), broker server time.", prices: "Prices: MT4 feed.", tv1: "Chart library:", home: "Licence and screenshots", terms: "Terms", privacy: "Privacy",
     },
@@ -58,7 +59,8 @@
       in_bg: "входит в фон", not_bg: "не входит в фон",
       gauge_tip: "Индикатор бык/медведь iSpectrum (Intraday и Week — как у администратора, Middle / Seasonal — по вашим галочкам фона)",
       status: "iSpectrum | {s} v{v} | обновлён {u}",
-      trim_note: "Бесплатный просмотр: Middle, Seasonal и фон показаны до конца текущей недели ({d}). Полный горизонт открывается ключом доступа.",
+      trim_note: "Бесплатный просмотр: Intraday, Middle, Seasonal и фон показаны до конца текущей недели ({d}). Полный горизонт открывается ключом доступа.",
+      candles: "Свечи", bars: "Бары", ctype_tip: "Вид цены: свечи или бары OHLC",
       disc_b: "Не является инвестиционной рекомендацией.", disc: "iSpectrum показывает модельные проекции только для информации. Это не торговые сигналы и не гарантия будущих цен. Торговля связана с риском.",
       times: "Всё время указано по МСК (UTC+3), время сервера брокера.", prices: "Цены: поток MT4.", tv1: "Библиотека графиков:", home: "Лицензия и скриншоты", terms: "Условия", privacy: "Конфиденциальность",
     },
@@ -82,6 +84,7 @@
   var key = localStorage.getItem("isp_chart_key") || "";
   var vis = {}; try { vis = JSON.parse(localStorage.getItem("isp_chart_vis") || "{}"); } catch (e) { vis = {}; }
   var dash = {}; try { dash = JSON.parse(localStorage.getItem("isp_chart_dash") || "{}"); } catch (e) { dash = {}; }
+  var ctype = localStorage.getItem("isp_chart_ctype") === "bars" ? "bars" : "candles";   // Candles / Bars toggle
   var data = null, last = null, refreshTimer = null, loadSeq = 0;
 
   // ---------------- chart ----------------
@@ -101,9 +104,11 @@
   function clearSeries() { Object.keys(series).forEach(function (k) { try { chart.removeSeries(series[k].s); } catch (e) {} }); series = {}; }
   // MT4 line style -> Lightweight Charts LineStyle (0 solid, 1 dotted, 2 dashed, 3 large dashed, 4 sparse dotted)
   function lwStyle(mt) { return [0, 2, 1, 3, 4][mt] || 0; }
+  // v4: projection lines one step thinner than the package width (3->2, 2->1, 1 stays 1), as the MT4 / screens renderers
+  function thin(w) { return Math.max(1, Math.min(6, w | 0 || 1) - 1); }
   function addLine(id, color, width, mtStyle, z) {
     var s = chart.addSeries(LWC.LineSeries, {
-      color: color, lineWidth: mtStyle ? 1 : Math.max(1, Math.min(6, width)), lineStyle: lwStyle(mtStyle), lineType: 0,
+      color: color, lineWidth: mtStyle ? 1 : Math.max(1, Math.min(4, width)), lineStyle: lwStyle(mtStyle), lineType: 0,
       lastValueVisible: false, priceLineVisible: false, crosshairMarkerVisible: false, pointMarkersVisible: false,
       autoscaleInfoProvider: function () { return null; },   // projection layers never move the price scale (MT4 behaviour)
       priceFormat: { type: "custom", formatter: function () { return ""; } },
@@ -138,7 +143,29 @@
     }
     return out;
   }
-  function range(arrs) { var lo = Infinity, hi = -Infinity; arrs.forEach(function (a) { a.forEach(function (q) { if (q.v < lo) lo = q.v; if (q.v > hi) hi = q.v; }); }); return [lo, hi]; }
+  function range(arrs) { var lo = Infinity, hi = -Infinity; arrs.forEach(function (a) { a.forEach(function (q) { if (q.v == null) return; if (q.v < lo) lo = q.v; if (q.v > hi) hi = q.v; }); }); return [lo, hi]; }
+  // Week as MT4 (IspWeekBarPoly): every week is its own piece, Monday starts unjoined (price gap). 5-day symbols: no weekend
+  // knots, a new piece at every week change or gap > 6 h; BTC (7 days): Sun->Mon stays joined unless the jump is > 3x the
+  // neighbouring 30-min moves (IspJoinBreak). A piece with one knot (e.g. next Monday 00:00 alone) is not drawn.
+  var JOIN_GAP = 21600, JOIN_K = 3;
+  function weekIdx(t) { return Math.floor((t - 4 * 86400) / (7 * 86400)); }
+  function joinCand(a, b) { return b > a && (b - a > JOIN_GAP || weekIdx(a) !== weekIdx(b)); }
+  function weekPieces(pts, w7) {
+    var k = pts.filter(function (q) { return w7 || !isWeekend(q[0]); }), n = k.length, out = [], a = 0;
+    function brk(i) {
+      var jump = Math.abs(k[i][1] - k[i - 1][1]); if (!(jump > 0)) return false;
+      var sc = 0;
+      for (var j = i - 4; j <= i + 4; j++) { if (j === i || j < 1 || j >= n || joinCand(k[j - 1][0], k[j][0])) continue; sc = Math.max(sc, Math.abs(k[j][1] - k[j - 1][1])); }
+      return jump > JOIN_K * sc;
+    }
+    while (a < n) {
+      var b = a;
+      while (b + 1 < n) { if (joinCand(k[b][0], k[b + 1][0]) && (!w7 || k[b + 1][0] - k[b][0] > JOIN_GAP || brk(b + 1))) break; b++; }
+      if (b > a) out.push(k.slice(a, b + 1));
+      a = b + 1;
+    }
+    return out;
+  }
 
   // layers: each one has its own [vmin..vmax] (MT4 IspLayerMap) mapped into the visible window minus the pads
   var layers = [];   // {ids:[...], parts:[{id, pts}], vmin, vmax, screen}
@@ -161,20 +188,38 @@
     // 5-day symbols: an isolated end point after the weekend gap (Monday 00:00) would draw a vertical jump
     var w5 = p.week_days !== 7;
     var tidy = function (pts) { var n = pts.length; return w5 && n > 2 && pts[n - 1][0] - pts[n - 2][0] > 86400 ? pts.slice(0, n - 1) : pts; };
+    var axIdx = {}; axis.forEach(function (x, i) { axIdx[x] = i; });
     order.forEach(function (nm) {
       var l = byName[nm]; if (!l) return;
-      var main = resample(tidy(l.points), axis), parts = [], width = l.width;
+      var parts = [], width = l.width;
       if (nm === "Intraday") width = Math.max(2, Math.min(5, width));
+      width = thin(width);
       if (nm === "Intraday" && l.fit && l.fit.length > 1) {
         var lbc = l.lbc || (l.points.length ? l.points[0][0] : Infinity);
         var fit = resample(l.fit.filter(function (q) { return q[0] <= lbc; }), axis);
         if (fit.length > 1) { addLine(nm + "_fit", l.color, l.fit_width || 1, l.fit_style || 2); parts.push({ id: nm + "_fit", item: nm, pts: fit }); }
       }
-      if (dash.indexOf(nm) >= 0 && wl) {
-        var pre = main.filter(function (q) { return q.time <= wl; }), post = main.filter(function (q) { return q.time >= wl; });
-        if (pre.length > 1) { addLine(nm + "_pre", l.color, 1, 1); parts.push({ id: nm + "_pre", item: nm, pts: pre }); main = post; }
-      }
-      addLine(nm, l.color, width, l.style); parts.push({ id: nm, item: nm, pts: main });
+      // pieces (Week: one per week, alternating between two series so Monday is not joined to Friday); in-sample part dashed
+      var pieces = nm === "Week" ? weekPieces(l.points, !w5) : [tidy(l.points)], acc = {}, ord = [];
+      var put = function (id, pts) {
+        if (pts.length < 2) return;
+        var a = acc[id]; if (!a) { a = acc[id] = []; ord.push(id); }
+        if (a.length) { var nx = axis[(axIdx[a[a.length - 1].time] | 0) + 1]; if (nx != null && nx < pts[0].time) a.push({ time: nx, v: null }); }   // gap
+        Array.prototype.push.apply(a, pts);
+      };
+      pieces.forEach(function (pc, j) {
+        var main = resample(pc, axis), sfx = j % 2 ? "_b" : "";
+        if (dash.indexOf(nm) >= 0 && wl) {
+          var pre = main.filter(function (q) { return q.time <= wl; }), post = main.filter(function (q) { return q.time >= wl; });
+          if (pre.length > 1) { put(nm + "_pre" + sfx, pre); main = post; }
+        }
+        put(nm + sfx, main);
+      });
+      ord.sort(function (x, y) { return (x.indexOf("_pre") < 0) - (y.indexOf("_pre") < 0); });   // dashed under solid
+      ord.forEach(function (id) {
+        var pre = id.indexOf("_pre") >= 0;
+        addLine(id, l.color, pre ? 1 : width, pre ? 1 : l.style); parts.push({ id: id, item: nm, pts: acc[id] });
+      });
       if (nm === "Intraday") parts = envParts.concat(parts);
       var r = range(parts.map(function (q) { return q.pts; }));
       layers.push({ name: nm, color: l.color, width: width, style: l.style, parts: parts, vmin: r[0], vmax: r[1], screen: l.screen });
@@ -200,7 +245,7 @@
     layers.forEach(function (L) {
       var sp = L.vmax - L.vmin;
       var f = !L.screen ? function (v) { return v; } : sp > 0 ? function (v) { return lo + (v - L.vmin) / sp * (hi - lo); } : function () { return (lo + hi) / 2; };
-      L.parts.forEach(function (q) { series[q.id].s.setData(q.pts.map(function (x) { return { time: x.time, value: f(x.v) }; })); });
+      L.parts.forEach(function (q) { series[q.id].s.setData(q.pts.map(function (x) { return x.v == null ? { time: x.time } : { time: x.time, value: f(x.v) }; })); });
     });
   }
   var remapTimer = null;
@@ -236,10 +281,13 @@
     var view = keepView ? chart.timeScale().getVisibleRange() : null;
     clearSeries(); lastWin = null;
     var ax = buildAxis(d), p = d.package, digits = d.digits;
-    var cs = chart.addSeries(LWC.CandlestickSeries, {
-      upColor: "#FFFFFF", downColor: "#6B6B6B", borderUpColor: "#6B6B6B", borderDownColor: "#6B6B6B", wickUpColor: "#6B6B6B", wickDownColor: "#6B6B6B",
-      priceFormat: { type: "price", precision: digits, minMove: Math.pow(10, -digits) }, priceLineColor: "#888888",
-    });
+    var pf = { type: "price", precision: digits, minMove: Math.pow(10, -digits) };
+    var cs = ctype === "bars"
+      ? chart.addSeries(LWC.BarSeries, { upColor: "#3C3C3C", downColor: "#3C3C3C", openVisible: true, thinBars: true, priceFormat: pf, priceLineColor: "#888888" })
+      : chart.addSeries(LWC.CandlestickSeries, {
+        upColor: "#FFFFFF", downColor: "#6B6B6B", borderUpColor: "#6B6B6B", borderDownColor: "#6B6B6B", wickUpColor: "#6B6B6B", wickDownColor: "#6B6B6B",
+        priceFormat: pf, priceLineColor: "#888888",
+      });
     series.candles = { s: cs };
     cs.setData(d.bars.map(function (b) { return { time: b[0], open: b[1], high: b[2], low: b[3], close: b[4] }; })
       .concat(ax.fut.map(function (x) { return { time: x }; })));
@@ -466,6 +514,15 @@
       b.addEventListener("click", function () { toggleLine(n); });
       lg.appendChild(b);
     });
+    // Candles / Bars (remembered in this browser)
+    var ct = el("div", "ctype"); ct.title = t("ctype_tip"); ct.setAttribute("role", "group");
+    ["candles", "bars"].forEach(function (k) {
+      var b = el("button", "ct" + (ctype === k ? " on" : "")); b.type = "button"; b.setAttribute("aria-pressed", ctype === k ? "true" : "false");
+      var ic = el("span", "cti " + k); b.appendChild(ic); b.appendChild(el("span", null, t(k)));
+      b.addEventListener("click", function () { if (ctype === k) return; ctype = k; try { localStorage.setItem("isp_chart_ctype", k); } catch (e) {} if (data) draw(data, true); else renderLegend(); });
+      ct.appendChild(b);
+    });
+    lg.appendChild(ct);
   }
   function renderMeta() {
     var m = $("#meta");
