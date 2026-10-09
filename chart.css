@@ -25,3 +25,31 @@ body.chartpage .wrap{max-width:1120px}
 .keyrow .btn{width:auto;flex:0 0 auto;padding:11px 16px}
 .keycard{max-width:720px}
 @media (max-width:600px){#chart{height:430px}.legend{flex-wrap:wrap}.chartcard{padding:8px 6px 6px;border-radius:10px}h1{font-size:21px}.lead{font-size:14.5px}}
+/* dashboard: flat MT4-like panel (tabs with background boxes, per-tab buttons, gauge, status line) */
+.dash{font:12.5px/16px Arial,Helvetica,sans-serif;color:#1E1E1E;margin:0 0 6px}
+.dash[hidden]{display:none}
+.dtop{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:flex-start;justify-content:space-between}
+.dleft{flex:1 1 420px;min-width:0;background:#F4F4F4;border:1px solid #ACACAC;border-radius:2px;padding:0 0 3px}
+.dtabs{display:flex;align-items:stretch;border-bottom:1px solid #ACACAC;background:#E6E6E6}
+.dtab{display:flex;align-items:center;gap:3px;padding:0 6px 0 5px;border-right:1px solid #C4C4C4}
+.dtab.on{background:#F4F4F4;margin-bottom:-1px;border-bottom:1px solid #F4F4F4}
+.dtab input{margin:0;width:13px;height:13px;accent-color:#3C6EB4}
+.dtabl{border:0;background:none;font:inherit;font-weight:700;color:#1E1E1E;padding:5px 2px;cursor:pointer}
+.dtab:not(.on) .dtabl{font-weight:400;color:#444}
+.dcol{margin-left:auto;border:0;border-left:1px solid #C4C4C4;background:none;font:14px/1 Arial,sans-serif;padding:0 10px;cursor:pointer;color:#444}
+.drow{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:4px 6px 0}
+.db{border:1px solid #9A9A9A;background:#FFFFFF;border-radius:2px;font:inherit;padding:2px 8px;min-height:22px;cursor:pointer;color:#1E1E1E}
+.db.sq{padding:2px 6px;min-width:22px}
+.db.on{background:#D6E4F5;border-color:#3C6EB4;color:#123A73;font-weight:700}
+.db:hover{border-color:#3C6EB4}
+.dtxt{padding:0 4px;white-space:nowrap}.dtxt.b{font-weight:700}.dtxt.mute{color:#6E6E6E;white-space:normal}
+.dplate{display:inline-block;min-width:150px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid #9A9A9A;background:#FFF;border-radius:2px;padding:2px 6px;min-height:22px;line-height:16px;font-weight:700}
+.dplate.on{background:#EEF3FA}
+.gauge{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:6px 2px 0;font-weight:700;font-size:12px}
+.gbear{color:#B22222}.gbull{color:#228B22}
+.gbar{display:flex;gap:1px}.gbar i{display:block;width:9px;height:12px;border:1px solid #1E1E1E;position:relative}
+.gbar i.mk::before{content:"";position:absolute;left:50%;top:-8px;margin-left:-4px;border:4px solid transparent;border-top:6px solid #000;border-bottom:0}
+.gval{border:1px solid #1E1E1E;background:#FFF;padding:1px 6px;min-width:46px;text-align:center}
+.dstatus{color:#555;font-size:12px;margin:4px 2px 0}
+.dtrim{color:#7A5A12;background:#FFF8E6;border:1px solid #EBD9A8;border-radius:3px;font-size:12px;padding:3px 7px;margin:4px 0 0}
+@media (max-width:600px){.dleft{flex-basis:100%}.dtab{padding:0 4px 0 3px}.dtabl{font-size:12px;padding:6px 1px}.gauge{padding-top:2px}.dplate{min-width:0;flex:1 1 140px}.db{min-height:28px}.db.sq{min-width:28px}}

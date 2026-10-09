@@ -19,6 +19,18 @@
       meta: "Package {v} · updated {u} · last M30 bar {b} · times MSK (UTC+3) · prices: MT4 feed", nopkg: "No projection published for this instrument yet.",
       Week: "Week", Intraday: "Intraday", Envelope: "Envelope", Stable: "Stable", Comp: "Comp", Middle: "Middle", Seasonal: "Seasonal", Background: "Background",
       tip: "{n}: click to show or hide",
+      tab_bg: "Background from {n}", tab_nobg: "No background on this tab", collapse: "Hide / show the panel",
+      line: "Line", line_tip: "Show / hide the {n} line", env_tip: "Envelope around the Intraday line",
+      wk_sync: "Week synced with the administrator", wk_own: "Week: your choice (Admin = sync)",
+      prev: "Previous Week candidate in the ranking", next: "Next Week candidate in the ranking",
+      auto_tip: "Auto: best score, chosen by the administrator at Monday 00:00 (now {c})",
+      top_tip: "Top N: composite of the N best candidates (one per line, rank weights N..1)", nm_tip: "Top N − 1 (min 2)", np_tip: "Top N + 1 (max {n})",
+      adm_tip: "Sync: show and follow the administrator's Week selection",
+      plate_tip: "Week candidates (main + alternatives, each also inverted), ranked by score; IS = weeks recomputed in-sample.",
+      in_bg: "part of the background", not_bg: "not part of the background",
+      gauge_tip: "iSpectrum bull/bear gauge (Intraday and Week as the administrator, Middle / Seasonal as your background boxes)",
+      status: "iSpectrum | {s} v{v} | updated {u}",
+      trim_note: "Free view: Middle, Seasonal and the background end with the current week ({d}). The full horizon opens with an access key.",
       disc_b: "Not investment advice.", disc: "iSpectrum shows model-based projections for information only. They are not trading signals and do not guarantee future prices. Trading involves risk.",
       times: "All times MSK (UTC+3), broker server time.", prices: "Prices: MT4 feed.", tv1: "Chart library:", home: "Licence and screenshots", terms: "Terms", privacy: "Privacy",
     },
@@ -35,6 +47,18 @@
       meta: "Пакет {v} · обновлён {u} · последний бар M30 {b} · время МСК (UTC+3) · цены: поток MT4", nopkg: "Проекция по этому инструменту пока не опубликована.",
       Week: "Week", Intraday: "Intraday", Envelope: "Envelope", Stable: "Stable", Comp: "Comp", Middle: "Middle", Seasonal: "Seasonal", Background: "Фон",
       tip: "{n}: нажмите, чтобы показать или скрыть",
+      tab_bg: "Фон от {n}", tab_nobg: "На этой вкладке фона нет", collapse: "Скрыть / показать панель",
+      line: "Линия", line_tip: "Показать / скрыть линию {n}", env_tip: "Конверт вокруг линии Intraday",
+      wk_sync: "Week синхронизирован с администратором", wk_own: "Week: ваш выбор (Admin = синхронизация)",
+      prev: "Предыдущий кандидат Week в рейтинге", next: "Следующий кандидат Week в рейтинге",
+      auto_tip: "Auto: лучший балл, выбор администратора в понедельник 00:00 (сейчас {c})",
+      top_tip: "Top N: композит N лучших кандидатов (по одному на линию, веса N..1)", nm_tip: "Top N − 1 (мин. 2)", np_tip: "Top N + 1 (макс. {n})",
+      adm_tip: "Синхронизация: показывать выбор Week администратора",
+      plate_tip: "Кандидаты Week (основная линия и альтернативы, каждая также инвертированная) по баллу; IS = недели, пересчитанные in-sample.",
+      in_bg: "входит в фон", not_bg: "не входит в фон",
+      gauge_tip: "Индикатор бык/медведь iSpectrum (Intraday и Week — как у администратора, Middle / Seasonal — по вашим галочкам фона)",
+      status: "iSpectrum | {s} v{v} | обновлён {u}",
+      trim_note: "Бесплатный просмотр: Middle, Seasonal и фон показаны до конца текущей недели ({d}). Полный горизонт открывается ключом доступа.",
       disc_b: "Не является инвестиционной рекомендацией.", disc: "iSpectrum показывает модельные проекции только для информации. Это не торговые сигналы и не гарантия будущих цен. Торговля связана с риском.",
       times: "Всё время указано по МСК (UTC+3), время сервера брокера.", prices: "Цены: поток MT4.", tv1: "Библиотека графиков:", home: "Лицензия и скриншоты", terms: "Условия", privacy: "Конфиденциальность",
     },
@@ -57,6 +81,7 @@
   if (SYMS.indexOf(sym) < 0) sym = "BTCUSD";
   var key = localStorage.getItem("isp_chart_key") || "";
   var vis = {}; try { vis = JSON.parse(localStorage.getItem("isp_chart_vis") || "{}"); } catch (e) { vis = {}; }
+  var dash = {}; try { dash = JSON.parse(localStorage.getItem("isp_chart_dash") || "{}"); } catch (e) { dash = {}; }
   var data = null, last = null, refreshTimer = null, loadSeq = 0;
 
   // ---------------- chart ----------------
@@ -123,6 +148,8 @@
     var ui = p.ui || {}, wl = ui.wlbc, dash = ui.insample_dash || [];
     var order = ["Week", "Intraday", "Stable", "Comp", "Middle", "Seasonal"];
     var byName = {}; p.lines.forEach(function (l) { byName[l.name] = l; });
+    var wv = weekValues();
+    if (wv && byName.Week) byName.Week = Object.assign({}, byName.Week, { points: wv });
     // envelope (Intraday band): drawn under the lines, scaled together with the Intraday layer so the band wraps the line
     var il = byName.Intraday, envParts = [];
     if (il && il.env && il.env.length > 1) {
@@ -131,9 +158,12 @@
       envParts = [{ id: "env_hi", item: "Envelope", pts: resample(il.env.map(function (q) { return [q[0], q[1]]; }), axis) },
                   { id: "env_lo", item: "Envelope", pts: resample(il.env.map(function (q) { return [q[0], q[2]]; }), axis) }];
     }
+    // 5-day symbols: an isolated end point after the weekend gap (Monday 00:00) would draw a vertical jump
+    var w5 = p.week_days !== 7;
+    var tidy = function (pts) { var n = pts.length; return w5 && n > 2 && pts[n - 1][0] - pts[n - 2][0] > 86400 ? pts.slice(0, n - 1) : pts; };
     order.forEach(function (nm) {
       var l = byName[nm]; if (!l) return;
-      var main = resample(l.points, axis), parts = [], width = l.width;
+      var main = resample(tidy(l.points), axis), parts = [], width = l.width;
       if (nm === "Intraday") width = Math.max(2, Math.min(5, width));
       if (nm === "Intraday" && l.fit && l.fit.length > 1) {
         var lbc = l.lbc || (l.points.length ? l.points[0][0] : Infinity);
@@ -215,7 +245,11 @@
       .concat(ax.fut.map(function (x) { return { time: x }; })));
     // background phase (payload heat colours) + "last bar" marker, drawn under the candles by a series primitive
     bg.cols = [];
-    if (p && p.heat && p.heat.length) {
+    var hv = heatVariant();
+    if (hv) {
+      var k2 = 0, c2 = "";
+      ax.all.forEach(function (x) { while (k2 < hv.length && hv[k2][0] <= x) c2 = hv[k2++][1]; if (c2 && x >= hv[0][0]) bg.cols.push([x, c2]); });
+    } else if (p && !p.bg && p.heat && p.heat.length) {
       var H = p.heat.slice().sort(function (a, b) { return a[0] - b[0]; }), k = 0, cur = null, hEnd = H[H.length - 1][0] + 6 * 3600;
       ax.all.forEach(function (x) { while (k < H.length && H[k][0] <= x) cur = H[k++][1]; if (cur && x >= H[0][0] && x <= hEnd) bg.cols.push([x, cur]); });
     }
@@ -240,13 +274,157 @@
     remap(true);
     renderLegend();
     renderMeta();
+    renderDash();
+  }
+
+  // ---------------- dashboard (MT4 buyer panel: tabs, per-tab controls, gauge, status line) ----------------
+  // Everything is precomputed by the server; the page only picks a variant. Choices persist per instrument.
+  var TABS = ["Intraday", "Week", "Middle", "Seasonal"];
+  function ds() {
+    var p = data && data.package, ui = (p && p.ui) || {}, d = dash[sym] || {};
+    return {
+      tab: TABS.indexOf(d.tab) >= 0 ? d.tab : "Week", open: d.open !== false,
+      hm: d.hm == null ? !!ui.heat_m : !!d.hm, hs: d.hs == null ? !!ui.heat_s : !!d.hs,
+      mode: d.mode == null ? 3 : d.mode, man: d.man || null, topn: d.topn || 0,
+    };
+  }
+  function dsSet(k, v) { var d = dash[sym] || (dash[sym] = {}); d[k] = v; try { localStorage.setItem("isp_chart_dash", JSON.stringify(dash)); } catch (e) {} }
+  function wk() { return data && data.package && data.package.week; }
+  function wTopN() { var w = wk(), st = ds(); if (!w) return 3; var n = st.topn >= 2 ? st.topn : w.admin.topn; return Math.max(2, Math.min(w.nmax, n)); }
+  function wManIdx() { var w = wk(), st = ds(); if (!w) return 0; for (var i = 0; i < w.c.length; i++) if (w.c[i].id === st.man) return i; return w.admin.shown; }
+  function wShown(mode) {
+    var w = wk(); if (!w) return 0;
+    if (mode === 3) return w.admin.shown;
+    if (mode === 1) return w.auto;
+    if (mode === 2) return w.top[wTopN()] ? w.top[wTopN()].m[0] : 0;
+    return wManIdx();
+  }
+  function weekValues() {
+    var w = wk(); if (!w) return null;
+    var st = ds(), v = st.mode === 3 ? w.admin.v : st.mode === 1 ? w.c[w.auto].v : st.mode === 2 ? (w.top[wTopN()] || {}).v : w.c[wManIdx()].v;
+    if (!v) return null;
+    var out = []; for (var i = 0; i < w.t.length; i++) if (v[i] != null) out.push([w.t[i], v[i]]);
+    return out.length > 1 ? out : null;
+  }
+  function heatVariant() {
+    var p = data && data.package; if (!p || !p.bg) return null;
+    var st = ds();
+    if (p.bg.adm) return st.hm || st.hs ? p.bg.adm : null;
+    return st.hm && st.hs ? (p.bg.ms || p.bg.m || p.bg.s) : st.hm ? p.bg.m : st.hs ? p.bg.s : null;
+  }
+  function candTxt(q) { var c = wk().c[q]; return c ? c.lbl + "  " + c.sc + " " + c.wk + "w" + (c.is ? " IS" : "") : "-"; }
+  function memTxt(m) { var w = wk(); return m.map(function (i) { return (w.c[i] ? w.c[i].id : "?").slice(0, 6); }).join(","); }
+  function plateTxt() {
+    var w = wk(), st = ds(), c = wShown(st.mode);
+    if (st.mode === 3) return w.admin.mode === 2 ? "Adm Top" + w.admin.topn + ": " + memTxt(w.admin.mem) : "Adm " + (w.admin.mode === 1 ? "A " : "") + candTxt(c);
+    if (st.mode === 2) { var n = wTopN(); return "Top" + n + ": " + memTxt((w.top[n] || { m: [] }).m); }
+    if (st.mode === 1) return "A " + candTxt(c);
+    return "#" + (c + 1) + " " + candTxt(c);
+  }
+  function weekClick(b) {
+    var w = wk(); if (!w) return;
+    var st = ds(), cur = wShown(st.mode), tn = wTopN();
+    if (b === "prev" || b === "next") { var pos = (cur + (b === "prev" ? -1 : 1) + w.c.length) % w.c.length; dsSet("man", w.c[pos].id); dsSet("mode", 0); }
+    else if (b === "auto") { if (st.mode === 1) { dsSet("mode", 0); dsSet("man", w.c[cur].id); } else dsSet("mode", 1); }
+    else if (b === "top") { if (st.mode === 2) dsSet("mode", 0); else { if (st.mode !== 0) dsSet("man", w.c[cur].id); dsSet("mode", 2); dsSet("topn", tn); } }
+    else if (b === "nm") { dsSet("topn", Math.max(2, tn - 1)); dsSet("mode", 2); }
+    else if (b === "np") { dsSet("topn", Math.min(w.nmax, tn + 1)); dsSet("mode", 2); }
+    else if (b === "adm") dsSet("mode", 3);
+    draw(data, true);
+  }
+  function gaugeColor(u) {
+    var a = 0.28, x = Math.max(0, Math.min(1, (u + 1) / 2));
+    var tr = Math.round(200 * (1 - x) + 34 * x), tg = Math.round(45 * (1 - x) + 160 * x), tb = Math.round(45 * (1 - x) + 60 * x);
+    return "rgb(" + Math.round(255 * (1 - a) + tr * a) + "," + Math.round(255 * (1 - a) + tg * a) + "," + Math.round(255 * (1 - a) + tb * a) + ")";
+  }
+  function dbtn(label, on, tip, fn, cls) {
+    var b = el("button", "db" + (on ? " on" : "") + (cls ? " " + cls : ""), label); b.type = "button"; if (tip) b.title = tip;
+    if (on != null) b.setAttribute("aria-pressed", on ? "true" : "false");
+    if (fn) b.addEventListener("click", fn); else b.disabled = true;
+    return b;
+  }
+  function toggleLine(n) { vis[sym + ":" + n] = !isOn(n); localStorage.setItem("isp_chart_vis", JSON.stringify(vis)); applyVisibility(); renderLegend(); renderDash(); }
+  function hasLine(n) { return layers.some(function (L) { return L.name === n; }); }
+  function renderDash() {
+    var root = $("#dash"); if (!root) return;
+    root.textContent = "";
+    var p = data && data.package;
+    if (!p) { root.hidden = true; return; }
+    root.hidden = false;
+    var st = ds();
+    // row 1: tabs (checkbox = background on Middle / Seasonal; disabled on Intraday / Week) + collapse arrow
+    var tabs = el("div", "dtabs");
+    TABS.forEach(function (n) {
+      var tb = el("div", "dtab" + (st.tab === n && st.open ? " on" : ""));
+      var bgTab = n === "Middle" || n === "Seasonal", cb = document.createElement("input");
+      cb.type = "checkbox"; cb.disabled = !bgTab; cb.checked = bgTab && (n === "Middle" ? st.hm : st.hs);
+      cb.title = bgTab ? t("tab_bg", { n: n }) : t("tab_nobg"); cb.setAttribute("aria-label", cb.title);
+      if (bgTab) cb.addEventListener("change", function () { dsSet(n === "Middle" ? "hm" : "hs", cb.checked); draw(data, true); });
+      var lb = el("button", "dtabl", n); lb.type = "button";
+      lb.addEventListener("click", function () { dsSet("tab", n); dsSet("open", true); renderDash(); });
+      tb.appendChild(cb); tb.appendChild(lb); tabs.appendChild(tb);
+    });
+    var col = el("button", "dcol", st.open ? "▴" : "▾"); col.type = "button"; col.title = t("collapse");
+    col.addEventListener("click", function () { dsSet("open", !st.open); renderDash(); });
+    tabs.appendChild(col);
+    var top = el("div", "dtop"), left = el("div", "dleft");
+    left.appendChild(tabs);
+    // row 2/3: controls of the open tab
+    if (st.open) {
+      var r = el("div", "drow"), n = st.tab;
+      if (hasLine(n)) r.appendChild(dbtn(t("line"), isOn(n), t("line_tip", { n: n }), function () { toggleLine(n); }));
+      if (n === "Intraday") {
+        if (idsFor("Envelope").length) r.appendChild(dbtn("E", isOn("Envelope"), t("env_tip"), function () { toggleLine("Envelope"); }));
+        if (p.intraday_weeks) { var iw = el("span", "dtxt b", p.intraday_weeks), il = layers.filter(function (L) { return L.name === "Intraday"; })[0]; if (il) iw.style.color = il.color; r.appendChild(iw); }
+      } else if (n === "Week") {
+        ["Stable", "Comp"].forEach(function (m) { if (hasLine(m)) r.appendChild(dbtn(m, isOn(m), t("line_tip", { n: m }), function () { toggleLine(m); })); });
+        if (wk()) r.appendChild(el("span", "dtxt", st.mode === 3 ? t("wk_sync") : t("wk_own")));
+      } else {
+        var ph = p.phase && p.phase[n === "Middle" ? "middle" : "seasonal"];
+        if (ph) { var a = el("span", "dtxt b", ph.l1); a.style.color = ph.color; r.appendChild(a); if (ph.l2) r.appendChild(el("span", "dtxt mute", ph.l2)); }
+        else r.appendChild(el("span", "dtxt mute", (n === "Middle" ? st.hm : st.hs) ? t("in_bg") : t("not_bg")));
+      }
+      left.appendChild(r);
+      if (n === "Week" && wk()) {
+        var w = wk(), r2 = el("div", "drow"), tn = wTopN(), wl = layers.filter(function (L) { return L.name === "Week"; })[0];
+        r2.appendChild(dbtn("<", null, t("prev"), function () { weekClick("prev"); }, "sq"));
+        var tip = t("plate_tip"); for (var q = 0; q < w.c.length && q < 6; q++) tip += "\n" + (q + 1) + " " + candTxt(q);
+        var pl = el("span", "dplate" + (st.mode === 3 ? " on" : ""), plateTxt()); pl.title = tip; if (wl) pl.style.color = wl.color;
+        r2.appendChild(pl);
+        r2.appendChild(dbtn(">", null, t("next"), function () { weekClick("next"); }, "sq"));
+        r2.appendChild(dbtn("Auto", st.mode === 1, t("auto_tip", { c: w.c[w.auto] ? w.c[w.auto].id : "-" }), function () { weekClick("auto"); }));
+        r2.appendChild(dbtn("Top" + tn, st.mode === 2, t("top_tip"), function () { weekClick("top"); }));
+        r2.appendChild(dbtn("−", null, t("nm_tip"), function () { weekClick("nm"); }, "sq"));
+        r2.appendChild(dbtn("+", null, t("np_tip", { n: w.nmax }), function () { weekClick("np"); }, "sq"));
+        r2.appendChild(dbtn("Admin", st.mode === 3, t("adm_tip"), function () { weekClick("adm"); }));
+        left.appendChild(r2);
+      }
+    }
+    top.appendChild(left);
+    // gauge: 21 segments bear..bull, marker and value (n/a when nothing is selected)
+    if (p.gauge) {
+      var g = el("div", "gauge"); g.title = t("gauge_tip");
+      var pct = p.gauge[(st.hm ? "1" : "0") + (st.hs ? "1" : "0")], na = pct == null;
+      g.appendChild(el("span", "gbear", "bear"));
+      var bar = el("span", "gbar");
+      var mk = na ? -1 : Math.max(0, Math.min(20, Math.round((pct / 100 + 1) * 0.5 * 20)));
+      for (var i = 0; i < 21; i++) { var sg = el("i", i === mk ? "mk" : null); sg.style.background = gaugeColor(i / 20 * 2 - 1); bar.appendChild(sg); }
+      g.appendChild(bar);
+      g.appendChild(el("span", "gbull", "bull"));
+      g.appendChild(el("span", "gval", na ? "n/a" : (pct > 0 ? "+" : "") + pct + "%"));
+      top.appendChild(g);
+    }
+    root.appendChild(top);
+    var tz = lang === "ru" ? " МСК" : " MSK";
+    root.appendChild(el("div", "dstatus", t("status", { s: sym, v: String(p.version), u: fmtReal(p.updated) + tz })));
+    if (p.trim && p.trim.until) root.appendChild(el("div", "dtrim", t("trim_note", { d: fmtSrv(p.trim.until - (p.week_days === 7 ? 60 : 2 * 86400 + 60)) + tz })));
   }
 
   // ---------------- legend (one row, MT4 legend spec: swatch in the real colour/width/style + name) ----------------
   var LG_ORDER = ["Week", "Intraday", "Envelope", "Stable", "Comp", "Middle", "Seasonal", "Background"];
   function defaultOn(name) {
     var ui = (data && data.package && data.package.ui) || {};
-    if (name === "Background") return true;
+    if (name === "Background") return true;   // master switch; colours follow the Middle / Seasonal boxes
     if (name === "Envelope") return !!ui.env;
     return (ui.visible || ["Week", "Comp"]).indexOf(name) >= 0;
   }
@@ -285,7 +463,7 @@
       else if (n === "Envelope") swatch(cv, "#A06E46", 1, 0);
       else swatch(cv, L.color, L.width, L.style);
       b.appendChild(cv); b.appendChild(el("span", null, t(n)));
-      b.addEventListener("click", function () { vis[sym + ":" + n] = !isOn(n); localStorage.setItem("isp_chart_vis", JSON.stringify(vis)); applyVisibility(); renderLegend(); });
+      b.addEventListener("click", function () { toggleLine(n); });
       lg.appendChild(b);
     });
   }
@@ -346,7 +524,7 @@
         if (key && j.key) { keyOk = j.key === "ok"; keyUntil = j.key_until || null; }
         if (x.code === 200 && j.status === "ok") { data = j; overlay(null); draw(j, keepView); }
         else {
-          if (!keepView) { data = null; clearSeries(); renderLegend(); renderMeta(); }
+          if (!keepView) { data = null; clearSeries(); renderLegend(); renderMeta(); renderDash(); }
           if (x.code === 401) overlay("lock");
           else if (x.code === 403) { if (key) keyOk = false; overlay("bad"); }
           else if (x.code === 429) overlay("busy", j.retry_after);
@@ -377,7 +555,7 @@
     $$("[data-t]").forEach(function (e) { e.textContent = t(e.getAttribute("data-t")); });
     $$(".lang button").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-lang") === lang); });
     chart.applyOptions({ localization: { locale: lang === "ru" ? "ru-RU" : "en-GB" } });
-    renderSyms(); renderLegend(); renderMeta(); keyMsg();
+    renderSyms(); renderLegend(); renderMeta(); renderDash(); keyMsg();
     if (!$("#overlay").hidden && last) { if (last.status === "key required") overlay("lock"); else if (last.status === "key invalid") overlay("bad"); }
   }
   $$(".lang button").forEach(function (b) { b.addEventListener("click", function () { lang = b.getAttribute("data-lang"); localStorage.setItem("isp_lang", lang); render(); }); });
