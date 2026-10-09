@@ -1,0 +1,27 @@
+/* chart page only (style.css stays shared with the shop page) */
+body.chartpage .wrap{max-width:1120px}
+.syms{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:thin}
+.sym{flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 11px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;color:var(--ink);white-space:nowrap}
+.sym small{font-weight:500;font-size:11px;color:var(--ok);margin-left:5px}
+.sym.lock{color:var(--mute)}.sym.lock small{color:var(--mute)}
+.sym.on{border-color:var(--acc);background:var(--acc2);color:var(--acc)}
+.chartcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 10px 8px;margin:0 0 14px}
+.legend{display:flex;flex-wrap:nowrap;gap:2px 4px;overflow-x:auto;background:#FCFCFC;border:1px solid #ACACAC;border-radius:3px;padding:2px 4px;margin:0 0 8px;min-height:22px;scrollbar-width:thin}
+.legend[hidden]{display:none}
+.lg{flex:0 0 auto;display:flex;align-items:center;gap:5px;border:0;background:none;padding:1px 6px 1px 3px;font:13px/16px Arial,Helvetica,sans-serif;color:#1E1E1E;cursor:pointer;border-radius:3px;white-space:nowrap}
+.lg:hover{background:#EEF2F7}
+.lg canvas{display:block;width:18px;height:8px}
+.lg.off{opacity:.38}.lg.off span{text-decoration:line-through}
+.chartbox{position:relative}
+#chart{height:540px;width:100%}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(246,247,249,.82);z-index:5;padding:16px}
+.overlay[hidden]{display:none}
+.ovbox{max-width:440px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.06)}
+.ovtitle{font-weight:700;margin:0 0 4px}
+.ovbtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}.ovbtns .btn{width:auto;padding:10px 16px}
+.meta{font-size:12.5px;color:var(--mute);margin:6px 2px 0;min-height:18px}
+.keyrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.keyrow input{flex:1 1 220px;min-width:0;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:600 16px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.5px}
+.keyrow .btn{width:auto;flex:0 0 auto;padding:11px 16px}
+.keycard{max-width:720px}
+@media (max-width:600px){#chart{height:430px}.legend{flex-wrap:wrap}.chartcard{padding:8px 6px 6px;border-radius:10px}h1{font-size:21px}.lead{font-size:14.5px}}

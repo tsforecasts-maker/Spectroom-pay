@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>iSpectrum — projection chart</title>
+<meta name="description" content="iSpectrum projection lines on a live M30 chart: Week, Intraday, Stable, Comp, Middle, Seasonal and the background phase.">
+<meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://tosszbmacumhmmdyegol.supabase.co; img-src 'self' data:; style-src 'self' 'sha256-3pRED1tOXas1FXFoPb9TGCjmYe9XQsmO9OV23khV2nY='; script-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="chart.css">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+</head>
+<body class="chartpage">
+<header><div class="wrap"><a class="brand" href="./"><img src="logo_t.png" alt="iSpectrum" width="307" height="72"></a>
+  <div class="lang"><button data-lang="en">EN</button><button data-lang="ru">RU</button></div></div></header>
+<main class="wrap">
+  <h1 data-t="h1"></h1>
+  <p class="lead" data-t="lead"></p>
+
+  <div class="syms" id="syms" role="tablist"></div>
+
+  <section class="chartcard">
+    <div class="legend" id="legend" aria-label="lines"></div>
+    <div class="chartbox">
+      <div id="chart"></div>
+      <div class="overlay" id="overlay" hidden>
+        <div class="ovbox">
+          <p class="ovtitle" id="ov_title"></p>
+          <p class="note" id="ov_text"></p>
+          <div class="ovbtns" id="ov_btns"></div>
+        </div>
+      </div>
+    </div>
+    <p class="meta" id="meta"></p>
+  </section>
+
+  <section class="card keycard">
+    <h2 data-t="key_title"></h2>
+    <p class="note top0" data-t="key_desc"></p>
+    <form class="keyrow" id="keyform" action="#">
+      <input id="keyin" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="ISP-XXXX-XXXX-XXXX" aria-label="key">
+      <button class="btn" type="submit" id="keyok" data-t="key_apply"></button>
+      <button class="btn alt" type="button" id="keyforget" data-t="key_forget"></button>
+    </form>
+    <p class="note" id="keymsg" aria-live="polite"></p>
+  </section>
+</main>
+<footer class="wrap">
+  <p><b data-t="disc_b"></b> <span data-t="disc"></span></p>
+  <p><span data-t="times"></span> · <span data-t="prices"></span></p>
+  <p class="tv"><span data-t="tv1"></span> TradingView Lightweight Charts™ Copyright (c) 2025 TradingView, Inc. <a href="https://www.tradingview.com/" rel="noopener">https://www.tradingview.com/</a> · <a href="vendor/lightweight-charts/NOTICE.txt">NOTICE</a> · <a href="vendor/lightweight-charts/LICENSE.txt">Apache-2.0</a></p>
+  <p><a href="./" data-t="home"></a> · <a href="terms.html" data-t="terms"></a> · <a href="privacy.html" data-t="privacy"></a></p>
+</footer>
+<script src="vendor/lightweight-charts/lightweight-charts.standalone.production.js"></script>
+<script src="chart.js"></script>
+</body>
+</html>
