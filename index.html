@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>iSpectrum — access and screenshots</title>
+<meta name="description" content="iSpectrum Private Research subscription and projection screenshots. Payment by crypto (Crypto Pay) or card (Whop).">
+<meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://tosszbmacumhmmdyegol.supabase.co; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><div class="wrap"><a class="brand" href="./">i<span>Spectrum</span></a>
+  <div class="lang"><button data-lang="en">EN</button><button data-lang="ru">RU</button></div></div></header>
+<main class="wrap">
+  <h1 data-t="h1"></h1>
+  <p class="lead" data-t="lead"></p>
+  <div class="banner" id="closed" data-t="closed"></div>
+
+  <section class="card" id="status" aria-live="polite">
+    <h2 data-t="st_title"></h2>
+    <div id="st_body"></div>
+  </section>
+
+  <section class="card">
+    <h2 data-t="sub_title"></h2>
+    <div class="price"><span id="sub_price">80</span> USDT <small data-t="sub_per"></small></div>
+    <ul class="inc"><li data-t="sub_i1"></li><li data-t="sub_i2"></li><li data-t="sub_i3"></li></ul>
+    <div class="pay">
+      <button class="btn" data-buy="sub30" data-method="crypto" data-t="pay_crypto"></button>
+      <button class="btn alt" data-buy="sub30" data-method="whop" data-t="pay_card"></button>
+    </div>
+    <p class="note" data-t="sub_note"></p>
+  </section>
+
+  <section class="card">
+    <h2 data-t="scr_title"></h2>
+    <p class="note top0" data-t="scr_desc"></p>
+    <div class="opts" id="scr_opts">
+      <button class="opt on" data-p="scr1"><b data-t="o1"></b><span>2 USDT</span></button>
+      <button class="opt" data-p="scr10"><b data-t="o10"></b><span>15 USDT</span></button>
+      <button class="opt" data-p="topup" data-usd="10"><b data-t="otop"></b><span>10 USDT</span></button>
+      <button class="opt" data-p="topup" data-usd="15"><b data-t="otop"></b><span>15 USDT</span></button>
+      <button class="opt" data-p="topup" data-usd="25"><b data-t="otop"></b><span>25 USDT</span></button>
+      <button class="opt" data-p="topup" data-usd="50"><b data-t="otop"></b><span>50 USDT</span></button>
+    </div>
+    <div class="pay">
+      <button class="btn" data-buy="scr" data-method="crypto" data-t="pay_crypto"></button>
+      <button class="btn alt" data-buy="scr" data-method="whop" data-t="pay_card"></button>
+    </div>
+    <p class="note" data-t="scr_note"></p>
+  </section>
+
+  <section class="card">
+    <h2 data-t="how_title"></h2>
+    <ol class="inc steps"><li data-t="how1"></li><li data-t="how2"></li><li data-t="how3"></li></ol>
+  </section>
+</main>
+<footer class="wrap">
+  <p><b data-t="disc_b"></b> <span data-t="disc"></span></p>
+  <p><a href="terms.html" data-t="terms"></a> · <a href="privacy.html" data-t="privacy"></a> · <a href="https://t.me/iSpectrumAccessBot" rel="noopener">@iSpectrumAccessBot</a> · <a href="https://t.me/iSpectrum_roadmaps" rel="noopener">t.me/iSpectrum_roadmaps</a></p>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>
