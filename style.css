@@ -7,6 +7,8 @@ header{background:var(--card);border-bottom:1px solid var(--line)}
 header .wrap{display:flex;align-items:center;justify-content:space-between;height:56px}
 .brand{font-weight:700;font-size:18px;letter-spacing:.2px;text-decoration:none;color:var(--ink)}
 .brand span{color:var(--acc)}
+.brand img{display:block;height:32px;width:auto}
+@media (min-width:600px){.brand img{height:36px}}
 .lang{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .lang button{border:0;background:none;padding:6px 10px;font:inherit;font-size:14px;cursor:pointer;color:var(--mute)}
 .lang button.on{background:var(--acc2);color:var(--acc);font-weight:600}
