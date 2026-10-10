@@ -205,7 +205,8 @@
         var fit = resample(l.fit.filter(function (q) { return q[0] <= lbc; }), axis);
         if (fit.length > 1) { addLine(nm + "_fit", l.color, l.fit_width || 1, l.fit_style || 2); parts.push({ id: nm + "_fit", item: nm, pts: fit }); }
       }
-      // pieces (Week: one per week, alternating between two series so Monday is not joined to Friday); in-sample part dashed
+      // pieces (Week: one per week, each in its OWN series - Lightweight Charts joins a line across whitespace, so two
+      // alternating series joined week 1 to week 3 straight through week 2 once the package held 3+ weeks); in-sample part dashed
       var pieces = nm === "Week" ? weekPieces(l.points, !w5) : [tidy(l.points)], acc = {}, ord = [];
       var put = function (id, pts) {
         if (pts.length < 2) return;
@@ -214,7 +215,7 @@
         Array.prototype.push.apply(a, pts);
       };
       pieces.forEach(function (pc, j) {
-        var main = resample(pc, axis), sfx = j % 2 ? "_b" : "";
+        var main = resample(pc, axis), sfx = j ? "_" + j : "";
         if (dash.indexOf(nm) >= 0 && wl) {
           var pre = main.filter(function (q) { return q.time <= wl; }), post = main.filter(function (q) { return q.time >= wl; });
           if (pre.length > 1) { put(nm + "_pre" + sfx, pre); main = post; }
