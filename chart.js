@@ -1,5 +1,5 @@
 // iSpectrum chart page: M30 candles (MT4 feed) + iSpectrum projection lines, drawn with TradingView Lightweight Charts.
-// No framework, no cookies, no trackers. Talks only to the `chart` edge function. Times are broker server time = MSK.
+// No framework, no cookies, no trackers. Talks only to the `chart` edge function. Data times are broker server time (UTC+3); labels are shown in the viewer's local zone.
 (function () {
   "use strict";
   var API = "https://tosszbmacumhmmdyegol.supabase.co/functions/v1/chart";
@@ -16,7 +16,7 @@
       get: "Get a licence", enter: "Enter key", open_free: "Open {s}",
       busy_t: "Too many requests", busy_x: "Please wait about {n} s and try again.",
       err_t: "Data temporarily unavailable", err_x: "Please try again in a few minutes.", retry: "Retry", off_t: "The chart is switched off for now", loading: "Loading…",
-      meta: "Package {v} · updated {u} · last M30 bar {b} · times MSK (UTC+3) · prices: MT4 feed", nopkg: "No projection published for this instrument yet.",
+      meta: "Package {v} · updated {u} · last M30 bar {b} · times {z} · prices: MT4 feed", nopkg: "No projection published for this instrument yet.",
       Week: "Week", Intraday: "Intraday", Envelope: "Envelope", Stable: "Stable", Comp: "Comp", Middle: "Middle", Seasonal: "Seasonal", Background: "Background",
       tip: "{n}: click to show or hide",
       tab_bg: "Background from {n}", tab_nobg: "No background on this tab", collapse: "Hide / show the panel",
@@ -33,10 +33,10 @@
       trim_note: "Free view: Intraday, Middle, Seasonal and the background end with the current week ({d}). The full horizon opens with an access key.",
       candles: "Candles", bars: "Bars", ctype_tip: "Price display: candles or OHLC bars",
       shot_tip: "Save a PNG of the current chart view", fs_tip: "Full screen (Esc to exit)", fs_exit: "Exit full screen (Esc)",
-      shot_title: "{s} · M30 · iSpectrum projection", shot_meta: "Saved {n} MSK · last M30 bar {b} MSK (MT4 prices) · package {v}",
-      shot_sig: "Not a trading signal.", shot_disc: "Model-based projection for information only; not investment advice. Times in MSK (broker server time).",
+      shot_title: "{s} · M30 · iSpectrum projection", shot_meta: "Saved {n} {z} · last M30 bar {b}",
+      shot_sig: "Not a trading signal.", shot_disc: "Model-based projection for information only; not investment advice.",
       disc_b: "Not investment advice.", disc: "iSpectrum shows model-based projections for information only. They are not trading signals and do not guarantee future prices. Trading involves risk.",
-      times: "All times MSK (UTC+3), broker server time.", prices: "Prices: MT4 feed.", tv1: "Chart library:", home: "Licence and screenshots", terms: "Terms", privacy: "Privacy",
+      times: "All times in your local time zone ({z}).", prices: "Prices: MT4 feed.", tv1: "Chart library:", home: "Licence and screenshots", terms: "Terms", privacy: "Privacy",
     },
     ru: {
       h1: "График проекций iSpectrum", lead: "Цены M30 с текущими линиями проекции iSpectrum и фоном фаз. Нажмите на название линии, чтобы показать или скрыть её.",
@@ -48,7 +48,7 @@
       get: "Получить лицензию", enter: "Ввести ключ", open_free: "Открыть {s}",
       busy_t: "Слишком много запросов", busy_x: "Подождите около {n} с и попробуйте снова.",
       err_t: "Данные временно недоступны", err_x: "Попробуйте через несколько минут.", retry: "Повторить", off_t: "График пока выключен", loading: "Загрузка…",
-      meta: "Пакет {v} · обновлён {u} · последний бар M30 {b} · время МСК (UTC+3) · цены: поток MT4", nopkg: "Проекция по этому инструменту пока не опубликована.",
+      meta: "Пакет {v} · обновлён {u} · последний бар M30 {b} · время {z} · цены: поток MT4", nopkg: "Проекция по этому инструменту пока не опубликована.",
       Week: "Week", Intraday: "Intraday", Envelope: "Envelope", Stable: "Stable", Comp: "Comp", Middle: "Middle", Seasonal: "Seasonal", Background: "Фон",
       tip: "{n}: нажмите, чтобы показать или скрыть",
       tab_bg: "Фон от {n}", tab_nobg: "На этой вкладке фона нет", collapse: "Скрыть / показать панель",
@@ -65,10 +65,10 @@
       trim_note: "Бесплатный просмотр: Intraday, Middle, Seasonal и фон показаны до конца текущей недели ({d}). Полный горизонт открывается ключом доступа.",
       candles: "Свечи", bars: "Бары", ctype_tip: "Вид цены: свечи или бары OHLC",
       shot_tip: "Сохранить PNG текущего вида графика", fs_tip: "Во весь экран (Esc — выход)", fs_exit: "Выйти из полноэкранного режима (Esc)",
-      shot_title: "{s} · M30 · проекция iSpectrum", shot_meta: "Сохранено {n} МСК · последний бар M30 {b} МСК (цены MT4) · пакет {v}",
-      shot_sig: "Не торговый сигнал.", shot_disc: "Модельная проекция только для информации; не инвестиционная рекомендация. Время МСК (время сервера брокера).",
+      shot_title: "{s} · M30 · проекция iSpectrum", shot_meta: "Сохранено {n} {z} · последний бар M30 {b}",
+      shot_sig: "Не торговый сигнал.", shot_disc: "Модельная проекция только для информации; не инвестиционная рекомендация.",
       disc_b: "Не является инвестиционной рекомендацией.", disc: "iSpectrum показывает модельные проекции только для информации. Это не торговые сигналы и не гарантия будущих цен. Торговля связана с риском.",
-      times: "Всё время указано по МСК (UTC+3), время сервера брокера.", prices: "Цены: поток MT4.", tv1: "Библиотека графиков:", home: "Лицензия и скриншоты", terms: "Условия", privacy: "Конфиденциальность",
+      times: "Всё время указано в вашем часовом поясе ({z}).", prices: "Цены: поток MT4.", tv1: "Библиотека графиков:", home: "Лицензия и скриншоты", terms: "Условия", privacy: "Конфиденциальность",
     },
   };
   var qs = new URLSearchParams(location.search);
@@ -78,10 +78,23 @@
   function t(k, v) { var s = T[lang][k] || k; if (v) Object.keys(v).forEach(function (x) { s = s.split("{" + x + "}").join(v[x]); }); return s; }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   var pad2 = function (n) { return (n < 10 ? "0" : "") + n; };
-  // server clock seconds (already MSK) -> "dd.mm HH:MM"; real epoch -> MSK by +3 h
-  function fmtSrv(sec, year) { var d = new Date(sec * 1000); return pad2(d.getUTCDate()) + "." + pad2(d.getUTCMonth() + 1) + (year ? "." + d.getUTCFullYear() : "") + " " + pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes()); }
-  function fmtReal(sec, year) { return fmtSrv(sec + 3 * 3600, year); }
-  function fmtDay(sec) { var d = new Date((sec + 3 * 3600) * 1000); return pad2(d.getUTCDate()) + "." + pad2(d.getUTCMonth() + 1) + "." + d.getUTCFullYear(); }
+  // v6: everything is shown in the VIEWER's local time zone. Bar / line times on the axis are the broker server clock
+  // (UTC+3) read as UTC; real epochs are real. The data axis is unchanged (line/candle alignment kept), only labels convert.
+  var SRV = 3 * 3600;
+  function fmtReal(sec, year) { var d = new Date(sec * 1000); return pad2(d.getDate()) + "." + pad2(d.getMonth() + 1) + (year ? "." + d.getFullYear() : "") + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()); }
+  function fmtSrv(sec, year) { return fmtReal(sec - SRV, year); }
+  function fmtDay(sec) { var d = new Date(sec * 1000); return pad2(d.getDate()) + "." + pad2(d.getMonth() + 1) + "." + d.getFullYear(); }
+  function tzLabel(sec) {
+    var m = -new Date((sec || Date.now() / 1000) * 1000).getTimezoneOffset(), a = Math.abs(m);
+    return "UTC" + (m === 0 ? "" : (m > 0 ? "+" : "-") + Math.floor(a / 60) + (a % 60 ? ":" + pad2(a % 60) : ""));
+  }
+  function axisTick(time, type) {
+    var d = new Date((time - SRV) * 1000), hm = pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    if (type === 0) return String(d.getFullYear());
+    if (type === 1) return d.toLocaleString(lang === "ru" ? "ru-RU" : "en-GB", { month: "short" });
+    if (type === 2) return (d.getHours() || d.getMinutes()) ? d.getDate() + " " + hm : String(d.getDate());
+    return hm;
+  }
 
   // ---------------- state ----------------
   var free = ["BTCUSD", "NAS100"], keyOk = false, keyUntil = null;
@@ -103,8 +116,9 @@
     rightPriceScale: { borderColor: "#C8C8C8", scaleMargins: { top: 0.08, bottom: 0.08 } },
     timeScale: { borderColor: "#C8C8C8", timeVisible: true, secondsVisible: false, rightOffset: 4, barSpacing: 4, minBarSpacing: 0.5 },
     crosshair: { mode: 0 },
-    localization: { locale: lang === "ru" ? "ru-RU" : "en-GB" },
+    localization: { locale: lang === "ru" ? "ru-RU" : "en-GB", timeFormatter: function (tm) { return fmtSrv(tm); } },
   });
+  chart.applyOptions({ timeScale: { tickMarkFormatter: axisTick } });
   var MARGIN = 0.08;
   var series = {};   // id -> {s, kind, line, part}
   function clearSeries() { Object.keys(series).forEach(function (k) { try { chart.removeSeries(series[k].s); } catch (e) {} }); series = {}; }
@@ -474,7 +488,7 @@
       top.appendChild(g);
     }
     root.appendChild(top);
-    var tz = lang === "ru" ? " МСК" : " MSK";
+    var tz = " " + tzLabel();
     root.appendChild(el("div", "dstatus", t("status", { s: sym, v: String(p.version), u: fmtReal(p.updated) + tz })));
     if (p.trim && p.trim.until) root.appendChild(el("div", "dtrim", t("trim_note", { d: fmtSrv(p.trim.until - (p.week_days === 7 ? 60 : 2 * 86400 + 60)) + tz })));
   }
@@ -540,8 +554,7 @@
     if (!data) { m.textContent = ""; return; }
     var p = data.package;
     if (!p) { m.textContent = t("nopkg"); return; }
-    var tz = lang === "ru" ? " МСК" : " MSK";
-    m.textContent = t("meta", { v: String(p.version), u: fmtReal(p.updated) + tz, b: data.last_bar_t ? fmtSrv(data.last_bar_t) + tz : "—" });
+    m.textContent = t("meta", { v: String(p.version), u: fmtReal(p.updated), b: data.last_bar_t ? fmtSrv(data.last_bar_t) : "—", z: tzLabel() });
   }
 
   // ---------------- symbols / overlay / key ----------------
@@ -640,42 +653,42 @@
     var btn = $("#shotbtn"); btn.classList.add("busy");
     try {
       var cv = chart.takeScreenshot(), S = cv.width / Math.max(1, box.clientWidth);
-      var HD = Math.round(62 * S), FT = Math.round(58 * S), Wd = cv.width, Hh = cv.height + HD + FT;
+      var HD = Math.round(62 * S), FT = Math.round(36 * S), Wd = cv.width, Hh = cv.height + HD + FT;
       var o = document.createElement("canvas"); o.width = Wd; o.height = Hh;
-      var g = o.getContext("2d"), F = "Arial,Helvetica,sans-serif", tz = lang === "ru" ? " МСК" : " MSK";
+      var g = o.getContext("2d"), F = "Arial,Helvetica,sans-serif";
       var px = function (n) { return Math.round(n * S) + "px "; };
       g.fillStyle = "#FFFFFF"; g.fillRect(0, 0, Wd, Hh);
       g.drawImage(cv, 0, HD);
       g.strokeStyle = "#C8C8C8"; g.lineWidth = Math.max(1, Math.round(S)); g.strokeRect(0.5, HD + 0.5, Wd - 1, cv.height - 1);
       var p = data.package, nowS = Math.floor(Date.now() / 1000);
-      // header: title + meta (left), channel link (right), legend of the visible lines (right, line 2)
+      // v6 header (Sergey's layout): title (line 1); meta left, legend centre, channel link right (line 2)
       g.textBaseline = "alphabetic"; g.fillStyle = "#1E1E1E"; g.font = "bold " + px(19) + F;
       g.fillText(t("shot_title", { s: sym }), 12 * S, 26 * S);
       g.font = px(12) + F; g.fillStyle = "#555";
-      g.fillText(t("shot_meta", { n: fmtReal(nowS, true), b: data.last_bar_t ? fmtSrv(data.last_bar_t) : "—", v: String(p.version) }), 12 * S, 48 * S);
-      g.textAlign = "right"; g.fillStyle = "#1E5AA0"; g.font = px(13) + F; g.fillText("t.me/iSpectrum_roadmaps", Wd - 12 * S, 24 * S);
-      var lx = Wd - 12 * S, items = shotLegend().reverse();
-      g.font = px(12) + F;
+      var meta = t("shot_meta", { n: fmtReal(nowS, true), b: data.last_bar_t ? fmtSrv(data.last_bar_t) : "—", z: tzLabel(nowS) });
+      g.fillText(meta, 12 * S, 48 * S); var mEnd = 12 * S + g.measureText(meta).width;
+      g.textAlign = "right"; g.fillStyle = "#1E5AA0"; g.font = px(13) + F; g.fillText("t.me/iSpectrum_roadmaps", Wd - 12 * S, 48 * S);
+      var lEnd = Wd - 12 * S - g.measureText("t.me/iSpectrum_roadmaps").width;
+      g.textAlign = "left"; g.font = px(12) + F;
+      var items = shotLegend(), tot = 0;
+      items.forEach(function (it, i) { tot += 23 * S + g.measureText(it.n).width + (i ? 16 * S : 0); });
+      var lx = Math.max(mEnd + 20 * S, Math.min((Wd - tot) / 2, lEnd - 20 * S - tot));
       items.forEach(function (it) {
-        var tw = g.measureText(it.n).width; g.fillStyle = "#1E1E1E"; g.fillText(it.n, lx, 48 * S); lx -= tw + 5 * S;
-        var w = (it.st ? 1 : Math.max(1, Math.min(6, it.w))) * S, x0 = lx - 18 * S; g.fillStyle = it.c;
-        if (!it.st) g.fillRect(x0, 44 * S - w / 2, 18 * S, w); else for (var k = 0; k < 18; k += 5) g.fillRect(x0 + k * S, 44 * S - S / 2, 3 * S, S);
-        lx = x0 - 12 * S;
+        var w = (it.st ? 1 : Math.max(1, Math.min(6, it.w))) * S; g.fillStyle = it.c;
+        if (!it.st) g.fillRect(lx, 44 * S - w / 2, 18 * S, w); else for (var k = 0; k < 18; k += 5) g.fillRect(lx + k * S, 44 * S - S / 2, 3 * S, S);
+        lx += 23 * S; g.fillStyle = "#1E1E1E"; g.fillText(it.n, lx, 48 * S); lx += g.measureText(it.n).width + 16 * S;
       });
-      g.textAlign = "left";
-      // watermark on the plot: dimmed logo + channel link (as the sold screenshots)
+      // watermark on the plot: dimmed logo only (v6: the channel link is in the header)
       g.save(); g.globalAlpha = 0.34;
       if (logoImg.complete && logoImg.naturalWidth) { var lh = 30 * S; g.drawImage(logoImg, 10 * S, HD + 8 * S, lh * logoImg.naturalWidth / logoImg.naturalHeight, lh); }
-      g.globalAlpha = 0.38; g.fillStyle = "#1E1E1E"; g.font = "bold " + px(14) + F; g.fillText("t.me/iSpectrum_roadmaps", 12 * S, HD + 56 * S);
       g.restore();
-      // footer: not a trading signal + disclaimer + links
+      // footer: not a trading signal + disclaimer (left), chart library attribution (right)
       var fy = HD + cv.height;
       g.font = "bold " + px(13) + F; g.fillStyle = "#A02828"; var sig = t("shot_sig"); g.fillText(sig, 12 * S, fy + 22 * S);
       var sx = 12 * S + g.measureText(sig).width + 8 * S; g.font = px(12) + F; g.fillStyle = "#555";
-      g.fillText(t("shot_disc"), sx, fy + 22 * S, Wd - sx - 12 * S);
-      g.fillStyle = "#888"; g.fillText("t.me/iSpectrum_roadmaps · @iSpectrumAccessBot · " + siteLink(), 12 * S, fy + 44 * S);
-      g.textAlign = "right"; g.fillStyle = "#AAA"; g.font = px(10.5) + F; g.fillText("Chart: TradingView Lightweight Charts™", Wd - 12 * S, fy + 44 * S); g.textAlign = "left";
-      var nm = "iSpectrum_" + sym + "_M30_" + fmtReal(nowS, true).replace(/^(\d\d)\.(\d\d)\.(\d{4}) (\d\d):(\d\d)$/, "$3-$2-$1_$4$5") + "MSK.png";
+      g.fillText(t("shot_disc"), sx, fy + 22 * S, Math.max(40 * S, Wd - sx - 24 * S - g.measureText("Chart: TradingView Lightweight Charts™").width * 0.9));
+      g.textAlign = "right"; g.fillStyle = "#AAA"; g.font = px(10.5) + F; var att = "Chart: TradingView Lightweight Charts™"; g.fillText(att, Wd - 12 * S, fy + 22 * S); g.textAlign = "left";
+      var nm = "iSpectrum_" + sym + "_M30_" + fmtReal(nowS, true).replace(/^(\d\d)\.(\d\d)\.(\d{4}) (\d\d):(\d\d)$/, "$3-$2-$1_$4$5") + "_" + tzLabel(nowS).replace("+", "p").replace("-", "m").replace(":", "") + ".png";
       var save = function (url, rel) { var a = document.createElement("a"); a.href = url; a.download = nm; document.body.appendChild(a); a.click(); a.remove(); if (rel) setTimeout(function () { URL.revokeObjectURL(url); }, 4000); btn.classList.remove("busy"); };
       if (o.toBlob) o.toBlob(function (b) { if (b) save(URL.createObjectURL(b), true); else save(o.toDataURL("image/png")); }, "image/png");
       else save(o.toDataURL("image/png"));
@@ -709,11 +722,11 @@
   // ---------------- language ----------------
   function render() {
     document.documentElement.lang = lang;
-    $$("[data-t]").forEach(function (e) { e.textContent = t(e.getAttribute("data-t")); });
+    $$("[data-t]").forEach(function (e) { e.textContent = t(e.getAttribute("data-t"), { z: tzLabel() }); });
     $$("[data-tt]").forEach(function (e) { e.title = t(e.getAttribute("data-tt")); e.setAttribute("aria-label", e.title); });
     fsSync();
     $$(".lang button").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-lang") === lang); });
-    chart.applyOptions({ localization: { locale: lang === "ru" ? "ru-RU" : "en-GB" } });
+    chart.applyOptions({ localization: { locale: lang === "ru" ? "ru-RU" : "en-GB", timeFormatter: function (tm) { return fmtSrv(tm); } } });
     renderSyms(); renderLegend(); renderMeta(); renderDash(); keyMsg();
     if (!$("#overlay").hidden && last) { if (last.status === "key required") overlay("lock"); else if (last.status === "key invalid") overlay("bad"); }
   }
