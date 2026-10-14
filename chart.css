@@ -52,7 +52,7 @@ body.chartpage .wrap{max-width:1120px}
 .gbar i.mk::before{content:"";position:absolute;left:50%;top:-8px;margin-left:-4px;border:4px solid transparent;border-top:6px solid #000;border-bottom:0}
 .gval{border:1px solid #1E1E1E;background:#FFF;padding:1px 6px;min-width:46px;text-align:center}
 .dstatus{color:#555;font-size:12px;margin:4px 2px 0}
-.dtrim{color:#7A5A12;background:#FFF8E6;border:1px solid #EBD9A8;border-radius:3px;font-size:12px;padding:3px 7px;margin:4px 0 0}
+.trimnote{color:#8A7440;font-size:11.5px;line-height:1.35;margin:2px 0 0;padding:0 0 0 7px;border-left:2px solid #EBD9A8}
 @media (max-width:600px){.dleft{flex-basis:100%}.dtab{padding:0 4px 0 3px}.dtabl{font-size:12px;padding:6px 1px}.gauge{padding-top:2px}.dplate{min-width:0;flex:1 1 140px}.db{min-height:28px}.db.sq{min-width:28px}}
 /* Candles / Bars toggle (right end of the legend row) */
 .ctype{flex:0 0 auto;display:flex;margin-left:auto;border:1px solid #ACACAC;border-radius:3px;overflow:hidden;background:#FFF}
@@ -89,4 +89,4 @@ body.chartpage .wrap{max-width:1120px}
 .stage.fs #chart{height:100%}
 .stage.fs .meta{margin-top:3px;min-height:0;font-size:11.5px}
 body.fslock{overflow:hidden;overscroll-behavior:none}
-@media (max-width:600px){.stage.fs{padding:4px 4px calc(4px + env(safe-area-inset-bottom))}.stage.fs .chartcard{padding:4px 3px 3px}.stage.fs .dstatus,.stage.fs .dtrim{display:none}}
+@media (max-width:600px){.stage.fs{padding:4px 4px calc(4px + env(safe-area-inset-bottom))}.stage.fs .chartcard{padding:4px 3px 3px}.stage.fs .dstatus,.stage.fs .trimnote{display:none}}

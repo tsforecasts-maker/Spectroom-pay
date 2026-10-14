@@ -1,5 +1,5 @@
 // iSpectrum chart page: M30 candles (MT4 feed) + iSpectrum projection lines, drawn with TradingView Lightweight Charts.
-// No framework, no cookies, no trackers. Talks only to the `chart` edge function. Data times are broker server time (UTC+3); labels are shown in the viewer's local zone.
+// No framework, no cookies, no trackers. Talks only to the `chart` edge function. Data times are broker server time (UTC+3 / UTC+2 in winter); labels are shown in the viewer's local zone.
 (function () {
   "use strict";
   var API = "https://tosszbmacumhmmdyegol.supabase.co/functions/v1/chart";
@@ -9,6 +9,8 @@
     en: {
       h1: "iSpectrum projection chart", lead: "M30 prices with the current iSpectrum projection lines and background phase. Tap a line name to show or hide it.",
       free: "free", key_title: "Access key", key_desc: "The free instruments change every two weeks. The other instruments open with the access key you received after paying for a licence.",
+      key_admin: "Administrator key: all instruments and the full horizon are open.", key_life: "Key valid. Lifetime access.",
+      live: "price {t}",
       key_apply: "Apply", key_forget: "Forget", key_ok: "Key valid. Licence active until {d}.", key_ok_open: "Key valid.", key_bad: "This key is not valid or the licence has expired.",
       key_fmt: "A key looks like ISP-XXXX-XXXX-XXXX.", key_saved_note: "The key is stored only in this browser.", key_gone: "Key removed from this browser.",
       lock_t: "{s} needs an access key", lock_x: "This period {f} are open for free. The other instruments are part of the iSpectrum licence.",
@@ -41,6 +43,8 @@
     ru: {
       h1: "График проекций iSpectrum", lead: "Цены M30 с текущими линиями проекции iSpectrum и фоном фаз. Нажмите на название линии, чтобы показать или скрыть её.",
       free: "бесплатно", key_title: "Ключ доступа", key_desc: "Бесплатные инструменты меняются раз в две недели. Остальные открываются ключом доступа, который вы получили после оплаты лицензии.",
+      key_admin: "Ключ администратора: открыты все инструменты и полный горизонт.", key_life: "Ключ действителен. Бессрочный доступ.",
+      live: "цена {t}",
       key_apply: "Применить", key_forget: "Забыть", key_ok: "Ключ действителен. Лицензия активна до {d}.", key_ok_open: "Ключ действителен.", key_bad: "Ключ недействителен или срок лицензии истёк.",
       key_fmt: "Ключ имеет вид ISP-XXXX-XXXX-XXXX.", key_saved_note: "Ключ хранится только в этом браузере.", key_gone: "Ключ удалён из этого браузера.",
       lock_t: "Для {s} нужен ключ доступа", lock_x: "В этот период бесплатно открыты {f}. Остальные инструменты входят в лицензию iSpectrum.",
@@ -79,17 +83,24 @@
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   var pad2 = function (n) { return (n < 10 ? "0" : "") + n; };
   // v6: everything is shown in the VIEWER's local time zone. Bar / line times on the axis are the broker server clock
-  // (UTC+3) read as UTC; real epochs are real. The data axis is unchanged (line/candle alignment kept), only labels convert.
-  var SRV = 3 * 3600;
+  // read as UTC; real epochs are real. The data axis is unchanged (line/candle alignment kept), only labels convert.
+  // v7: the broker (Alpari) clock is UTC+3 while US daylight time is active and UTC+2 otherwise, so every server time is
+  // converted to real UTC with the offset valid at that moment (no fixed +3), then shown in the viewer's own zone (DST-aware).
+  function nthSun(y, m, n) { var d = new Date(Date.UTC(y, m, 1)); return Date.UTC(y, m, 1 + (7 - d.getUTCDay()) % 7 + 7 * (n - 1)) / 1000; }
+  function srvOff(sec) {
+    var y = new Date(sec * 1000).getUTCFullYear(), a = nthSun(y, 2, 2) + 7 * 3600 + 3 * 3600, b = nthSun(y, 10, 1) + 6 * 3600 + 3 * 3600;
+    return sec >= a && sec < b ? 3 * 3600 : 2 * 3600;
+  }
+  function srvReal(sec) { return sec - srvOff(sec); }
   function fmtReal(sec, year) { var d = new Date(sec * 1000); return pad2(d.getDate()) + "." + pad2(d.getMonth() + 1) + (year ? "." + d.getFullYear() : "") + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()); }
-  function fmtSrv(sec, year) { return fmtReal(sec - SRV, year); }
+  function fmtSrv(sec, year) { return fmtReal(srvReal(sec), year); }
   function fmtDay(sec) { var d = new Date(sec * 1000); return pad2(d.getDate()) + "." + pad2(d.getMonth() + 1) + "." + d.getFullYear(); }
   function tzLabel(sec) {
     var m = -new Date((sec || Date.now() / 1000) * 1000).getTimezoneOffset(), a = Math.abs(m);
     return "UTC" + (m === 0 ? "" : (m > 0 ? "+" : "-") + Math.floor(a / 60) + (a % 60 ? ":" + pad2(a % 60) : ""));
   }
   function axisTick(time, type) {
-    var d = new Date((time - SRV) * 1000), hm = pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    var d = new Date(srvReal(time) * 1000), hm = pad2(d.getHours()) + ":" + pad2(d.getMinutes());
     if (type === 0) return String(d.getFullYear());
     if (type === 1) return d.toLocaleString(lang === "ru" ? "ru-RU" : "en-GB", { month: "short" });
     if (type === 2) return (d.getHours() || d.getMinutes()) ? d.getDate() + " " + hm : String(d.getDate());
@@ -97,7 +108,7 @@
   }
 
   // ---------------- state ----------------
-  var free = ["BTCUSD", "NAS100"], keyOk = false, keyUntil = null;
+  var free = ["BTCUSD", "NAS100"], keyOk = false, keyUntil = null, keyKind = null;
   var sym = (qs.get("s") || localStorage.getItem("isp_chart_sym") || "BTCUSD").toUpperCase();
   if (SYMS.indexOf(sym) < 0) sym = "BTCUSD";
   var key = localStorage.getItem("isp_chart_key") || "";
@@ -141,8 +152,9 @@
   var STEP = 1800;
   function isWeekend(sec) { var d = new Date(sec * 1000).getUTCDay(); return d === 0 || d === 6; }
   // axis = bar times + future 30-min slots (no weekend slots for 5-day symbols) up to the end of the projections
+  function allBars(d) { return d.live && (!d.bars.length || d.live[0] > d.bars[d.bars.length - 1][0]) ? d.bars.concat([d.live]) : d.bars; }
   function buildAxis(d) {
-    var bars = d.bars, p = d.package, ax = bars.map(function (b) { return b[0]; });
+    var bars = allBars(d), p = d.package, ax = bars.map(function (b) { return b[0]; });
     var lastT = ax.length ? ax[ax.length - 1] : 0, maxT = lastT;
     if (p) p.lines.forEach(function (l) { var a = l.points; if (a.length) maxT = Math.max(maxT, a[a.length - 1][0]); });
     maxT = Math.min(maxT, lastT + 21 * 86400);
@@ -248,7 +260,7 @@
   }
   // visible price window of the candles (same as the autoscaled right price scale incl. its margins)
   function priceWindow() {
-    var bars = data ? data.bars : [], vr = chart.timeScale().getVisibleRange(), lo = Infinity, hi = -Infinity;
+    var bars = data ? allBars(data) : [], vr = chart.timeScale().getVisibleRange(), lo = Infinity, hi = -Infinity;
     if (vr) for (var i = bars.length - 1; i >= 0; i--) { var b = bars[i]; if (b[0] > vr.to) continue; if (b[0] < vr.from) break; if (b[3] < lo) lo = b[3]; if (b[2] > hi) hi = b[2]; }
     if (!isFinite(lo)) for (var k = Math.max(0, bars.length - 48); k < bars.length; k++) { lo = Math.min(lo, bars[k][3]); hi = Math.max(hi, bars[k][2]); }
     if (!isFinite(lo)) return null;
@@ -310,7 +322,7 @@
         priceFormat: pf, priceLineColor: "#888888",
       });
     series.candles = { s: cs };
-    cs.setData(d.bars.map(function (b) { return { time: b[0], open: b[1], high: b[2], low: b[3], close: b[4] }; })
+    cs.setData(allBars(d).map(function (b) { return { time: b[0], open: b[1], high: b[2], low: b[3], close: b[4] }; })
       .concat(ax.fut.map(function (x) { return { time: x }; })));
     // background phase (payload heat colours) + "last bar" marker, drawn under the candles by a series primitive
     bg.cols = [];
@@ -418,7 +430,7 @@
     var root = $("#dash"); if (!root) return;
     root.textContent = "";
     var p = data && data.package;
-    if (!p) { root.hidden = true; return; }
+    if (!p) { root.hidden = true; var tn0 = $("#trimnote"); if (tn0) tn0.hidden = true; return; }
     root.hidden = false;
     var st = ds();
     // row 1: tabs (checkbox = background, Middle / Seasonal only; v5: none on Intraday / Week) + collapse arrow
@@ -490,7 +502,8 @@
     root.appendChild(top);
     var tz = " " + tzLabel();
     root.appendChild(el("div", "dstatus", t("status", { s: sym, v: String(p.version), u: fmtReal(p.updated) + tz })));
-    if (p.trim && p.trim.until) root.appendChild(el("div", "dtrim", t("trim_note", { d: fmtSrv(p.trim.until - (p.week_days === 7 ? 60 : 2 * 86400 + 60)) + tz })));
+    var tn = $("#trimnote");   // v7: free-view note sits under the chart, compact (secondary information)
+    if (tn) { tn.hidden = !(p.trim && p.trim.until); tn.textContent = tn.hidden ? "" : t("trim_note", { d: fmtSrv(p.trim.until - (p.week_days === 7 ? 60 : 2 * 86400 + 60)) + tz }); }
   }
 
   // ---------------- legend (one row, MT4 legend spec: swatch in the real colour/width/style + name) ----------------
@@ -554,7 +567,9 @@
     if (!data) { m.textContent = ""; return; }
     var p = data.package;
     if (!p) { m.textContent = t("nopkg"); return; }
-    m.textContent = t("meta", { v: String(p.version), u: fmtReal(p.updated), b: data.last_bar_t ? fmtSrv(data.last_bar_t) : "—", z: tzLabel() });
+    var lb = data.live ? data.live[0] : data.last_bar_t;
+    m.textContent = t("meta", { v: String(p.version), u: fmtReal(p.updated), b: lb ? fmtSrv(lb) : "—", z: tzLabel() }) +
+      (data.live_at ? " · " + t("live", { t: fmtReal(data.live_at).slice(6) }) : "");
   }
 
   // ---------------- symbols / overlay / key ----------------
@@ -578,9 +593,9 @@
     function btn(label, cls, fn, href) { var b = el(href ? "a" : "button", "btn" + (cls ? " " + cls : ""), label); if (href) b.href = href; else { b.type = "button"; b.addEventListener("click", fn); } btns.appendChild(b); }
     if (kind === "lock" || kind === "bad") {
       title.textContent = t(kind === "lock" ? "lock_t" : "bad_t", { s: sym }); text.textContent = kind === "lock" ? t("lock_x", { f: fl }) : t("bad_x");
-      btn(t("get"), "", null, "./" + (lang === "ru" ? "?lang=ru" : ""));
-      btn(t("enter"), "alt", function () { if (fsOn()) fsExit(); $("#keyin").focus(); $("#keyin").scrollIntoView({ block: "center", behavior: "smooth" }); });
-      if (free.length) btn(t("open_free", { s: free[0] }), "alt", function () { sym = free[0]; renderSyms(); load(false); });
+      // v7: only actions for the locked instrument itself (no jump to a free one)
+      btn(t("enter"), "", function () { if (fsOn()) fsExit(); $("#keyin").focus(); $("#keyin").scrollIntoView({ block: "center", behavior: "smooth" }); });
+      btn(t("get"), "alt", null, "./" + (lang === "ru" ? "?lang=ru" : ""));
     } else if (kind === "busy") { title.textContent = t("busy_t"); text.textContent = t("busy_x", { n: extra || 60 }); btn(t("retry"), "", function () { load(false); }); }
     else if (kind === "loading") { title.textContent = t("loading"); text.textContent = ""; }
     else if (kind === "off") { title.textContent = t("off_t"); text.textContent = ""; }
@@ -590,7 +605,7 @@
   function keyMsg() {
     var m = $("#keymsg");
     if (!key) { m.textContent = t("key_fmt") + " " + t("key_saved_note"); m.className = "note"; return; }
-    if (keyOk) { m.textContent = keyUntil ? t("key_ok", { d: fmtDay(keyUntil) }) : t("key_ok_open"); m.className = "note ok"; }
+    if (keyOk) { m.textContent = keyKind === "admin" ? t("key_admin") : keyKind === "lifetime" ? t("key_life") : keyUntil ? t("key_ok", { d: fmtDay(keyUntil) }) : t("key_ok_open"); m.className = "note ok"; }
     else if (last && last.key === "invalid") { m.textContent = t("key_bad"); m.className = "note err"; }
     else { m.textContent = t("key_saved_note"); m.className = "note"; }
   }
@@ -604,7 +619,7 @@
         if (my !== loadSeq) return;
         var j = x.j || {}; last = j;
         if (j.free) free = j.free;
-        if (key && j.key) { keyOk = j.key === "ok"; keyUntil = j.key_until || null; }
+        if (key && j.key) { keyOk = j.key === "ok"; keyUntil = j.key_until || null; keyKind = j.kind || (j.tier === "admin" ? "admin" : null); }
         if (x.code === 200 && j.status === "ok") { data = j; overlay(null); draw(j, keepView); }
         else {
           if (!keepView) { data = null; clearSeries(); renderLegend(); renderMeta(); renderDash(); }
@@ -617,18 +632,37 @@
         renderSyms(); keyMsg();
       })
       .catch(function () { if (my !== loadSeq) return; if (!keepView) overlay("err"); });
-    clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(function tick() { if (document.hidden) { refreshTimer = setTimeout(tick, 60000); return; } load(true); }, 5 * 60000);
+    schedTick();
   }
+  // v7: every 60 s a light /tick (last bars + forming bar + package version). New closed bar or new package -> full reload;
+  // only the forming bar moved -> redraw in place. Hidden tabs do not poll.
+  var TICK_MS = 60000;
+  function schedTick() { clearTimeout(refreshTimer); refreshTimer = setTimeout(tick, TICK_MS); }
+  function tick() {
+    if (document.hidden || !data || !data.package) { schedTick(); return; }
+    var my = loadSeq, h = {}; if (key) h["X-ISP-Key"] = key;
+    fetch(API + "/tick?symbol=" + encodeURIComponent(sym), { headers: h, cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (my !== loadSeq || !j || j.status !== "ok") { schedTick(); return; }
+        if (j.version !== data.package.version || j.last_bar_t !== data.last_bar_t) { load(true); return; }
+        var a = JSON.stringify(j.live), b = JSON.stringify(data.live || null);
+        if (a !== b) { data.live = j.live; data.live_at = j.live_at; draw(data, true); }
+        else if (j.live_at) { data.live_at = j.live_at; renderMeta(); }
+        schedTick();
+      })
+      .catch(function () { schedTick(); });
+  }
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && data) { clearTimeout(refreshTimer); tick(); } });
   $("#keyform").addEventListener("submit", function (e) {
     e.preventDefault();
     var raw = $("#keyin").value.toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/^ISP/, "");
     if (raw.length !== 12) { var m = $("#keymsg"); m.textContent = t("key_fmt"); m.className = "note err"; return; }
     key = "ISP-" + raw.slice(0, 4) + "-" + raw.slice(4, 8) + "-" + raw.slice(8, 12);
-    $("#keyin").value = key; localStorage.setItem("isp_chart_key", key); keyOk = false; keyUntil = null; load(false);
+    $("#keyin").value = key; localStorage.setItem("isp_chart_key", key); keyOk = false; keyUntil = null; keyKind = null; load(false);
   });
   $("#keyforget").addEventListener("click", function () {
-    key = ""; keyOk = false; keyUntil = null; localStorage.removeItem("isp_chart_key"); $("#keyin").value = "";
+    key = ""; keyOk = false; keyUntil = null; keyKind = null; localStorage.removeItem("isp_chart_key"); $("#keyin").value = "";
     $("#keymsg").textContent = t("key_gone"); $("#keymsg").className = "note"; renderSyms(); load(false);
   });
 
