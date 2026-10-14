@@ -10,7 +10,7 @@
       h1: "iSpectrum projection chart", lead: "M30 prices with the current iSpectrum projection lines and background phase. Tap a line name to show or hide it.",
       free: "free", key_title: "Access key", key_desc: "The free instruments change every two weeks. The other instruments open with the access key you received after paying for a licence.",
       key_admin: "Administrator key: all instruments and the full horizon are open.", key_life: "Key valid. Lifetime access.",
-      live: "price {t}",
+      live: "price {t}", key_dev: "This key is already used on 2 devices. Contact support.",
       key_apply: "Apply", key_forget: "Forget", key_ok: "Key valid. Licence active until {d}.", key_ok_open: "Key valid.", key_bad: "This key is not valid or the licence has expired.",
       key_fmt: "A key looks like ISP-XXXX-XXXX-XXXX.", key_saved_note: "The key is stored only in this browser.", key_gone: "Key removed from this browser.",
       lock_t: "{s} needs an access key", lock_x: "This period {f} are open for free. The other instruments are part of the iSpectrum licence.",
@@ -44,7 +44,7 @@
       h1: "График проекций iSpectrum", lead: "Цены M30 с текущими линиями проекции iSpectrum и фоном фаз. Нажмите на название линии, чтобы показать или скрыть её.",
       free: "бесплатно", key_title: "Ключ доступа", key_desc: "Бесплатные инструменты меняются раз в две недели. Остальные открываются ключом доступа, который вы получили после оплаты лицензии.",
       key_admin: "Ключ администратора: открыты все инструменты и полный горизонт.", key_life: "Ключ действителен. Бессрочный доступ.",
-      live: "цена {t}",
+      live: "цена {t}", key_dev: "Этот ключ уже используется на 2 устройствах. Обратитесь в поддержку.",
       key_apply: "Применить", key_forget: "Забыть", key_ok: "Ключ действителен. Лицензия активна до {d}.", key_ok_open: "Ключ действителен.", key_bad: "Ключ недействителен или срок лицензии истёк.",
       key_fmt: "Ключ имеет вид ISP-XXXX-XXXX-XXXX.", key_saved_note: "Ключ хранится только в этом браузере.", key_gone: "Ключ удалён из этого браузера.",
       lock_t: "Для {s} нужен ключ доступа", lock_x: "В этот период бесплатно открыты {f}. Остальные инструменты входят в лицензию iSpectrum.",
@@ -112,6 +112,13 @@
   var sym = (qs.get("s") || localStorage.getItem("isp_chart_sym") || "BTCUSD").toUpperCase();
   if (SYMS.indexOf(sym) < 0) sym = "BTCUSD";
   var key = localStorage.getItem("isp_chart_key") || "";
+  // v8: random per-browser device id (a key works on at most 2 devices; admin key unlimited)
+  var devId = localStorage.getItem("isp_chart_dev");
+  if (!devId || !/^[a-f0-9]{32}$/.test(devId)) {
+    var rb = new Uint8Array(16); window.crypto.getRandomValues(rb);
+    devId = Array.prototype.map.call(rb, function (x) { return (x < 16 ? "0" : "") + x.toString(16); }).join("");
+    try { localStorage.setItem("isp_chart_dev", devId); } catch (e) {}
+  }
   var vis = {}; try { vis = JSON.parse(localStorage.getItem("isp_chart_vis") || "{}"); } catch (e) { vis = {}; }
   var dash = {}; try { dash = JSON.parse(localStorage.getItem("isp_chart_dash") || "{}"); } catch (e) { dash = {}; }
   var ctype = localStorage.getItem("isp_chart_ctype") === "bars" ? "bars" : "candles";   // Candles / Bars toggle
@@ -592,7 +599,7 @@
     var fl = free.join(lang === "ru" ? " и " : " and ");
     function btn(label, cls, fn, href) { var b = el(href ? "a" : "button", "btn" + (cls ? " " + cls : ""), label); if (href) b.href = href; else { b.type = "button"; b.addEventListener("click", fn); } btns.appendChild(b); }
     if (kind === "lock" || kind === "bad") {
-      title.textContent = t(kind === "lock" ? "lock_t" : "bad_t", { s: sym }); text.textContent = kind === "lock" ? t("lock_x", { f: fl }) : t("bad_x");
+      title.textContent = t(kind === "lock" ? "lock_t" : "bad_t", { s: sym }); text.textContent = kind === "lock" ? t("lock_x", { f: fl }) : last && last.key === "devices" ? t("key_dev") : t("bad_x");
       // v7: only actions for the locked instrument itself (no jump to a free one)
       btn(t("enter"), "", function () { if (fsOn()) fsExit(); $("#keyin").focus(); $("#keyin").scrollIntoView({ block: "center", behavior: "smooth" }); });
       btn(t("get"), "alt", null, "./" + (lang === "ru" ? "?lang=ru" : ""));
@@ -606,13 +613,14 @@
     var m = $("#keymsg");
     if (!key) { m.textContent = t("key_fmt") + " " + t("key_saved_note"); m.className = "note"; return; }
     if (keyOk) { m.textContent = keyKind === "admin" ? t("key_admin") : keyKind === "lifetime" ? t("key_life") : keyUntil ? t("key_ok", { d: fmtDay(keyUntil) }) : t("key_ok_open"); m.className = "note ok"; }
+    else if (last && last.key === "devices") { m.textContent = t("key_dev"); m.className = "note err"; }
     else if (last && last.key === "invalid") { m.textContent = t("key_bad"); m.className = "note err"; }
     else { m.textContent = t("key_saved_note"); m.className = "note"; }
   }
   function load(keepView) {
     var my = ++loadSeq;
     if (!keepView) overlay("loading");
-    var h = {}; if (key) h["X-ISP-Key"] = key;
+    var h = {}; if (key) { h["X-ISP-Key"] = key; h["X-ISP-Device"] = devId; }
     fetch(API + "/data?symbol=" + encodeURIComponent(sym), { headers: h, cache: "no-store" })
       .then(function (r) { return r.json().then(function (j) { return { code: r.status, j: j }; }, function () { return { code: r.status, j: {} }; }); })
       .then(function (x) {
@@ -640,7 +648,7 @@
   function schedTick() { clearTimeout(refreshTimer); refreshTimer = setTimeout(tick, TICK_MS); }
   function tick() {
     if (document.hidden || !data || !data.package) { schedTick(); return; }
-    var my = loadSeq, h = {}; if (key) h["X-ISP-Key"] = key;
+    var my = loadSeq, h = {}; if (key) { h["X-ISP-Key"] = key; h["X-ISP-Device"] = devId; }
     fetch(API + "/tick?symbol=" + encodeURIComponent(sym), { headers: h, cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) {
