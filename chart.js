@@ -164,7 +164,7 @@
     var bars = allBars(d), p = d.package, ax = bars.map(function (b) { return b[0]; });
     var lastT = ax.length ? ax[ax.length - 1] : 0, maxT = lastT;
     if (p) p.lines.forEach(function (l) { var a = l.points; if (a.length) maxT = Math.max(maxT, a[a.length - 1][0]); });
-    maxT = Math.min(maxT, lastT + 21 * 86400);
+    maxT = Math.min(maxT, lastT + 70 * 86400);   // v8: full horizon (Middle/Seasonal beyond the current week)
     var w7 = p && p.week_days === 7, fut = [];
     for (var x = lastT + STEP; x <= maxT; x += STEP) if (w7 || !isWeekend(x)) fut.push(x);
     return { all: ax.concat(fut), fut: fut, lastT: lastT };
