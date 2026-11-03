@@ -261,8 +261,21 @@
         addLine(id, l.color, pre ? 1 : width, pre ? 1 : l.style); parts.push({ id: id, item: nm, pts: acc[id] });
       });
       if (nm === "Intraday") parts = envParts.concat(parts);
-      var r = range(parts.map(function (q) { return q.pts; }));
-      layers.push({ name: nm, color: l.color, width: width, style: l.style, parts: parts, vmin: r[0], vmax: r[1], screen: l.screen });
+      var r = range(parts.map(function (q) { return q.pts; })), fitHi = 0;
+      // v6 (MT5 1.20 parity): Stable / Comp screen range = points up to the end of the W-LBC week only
+      if (nm === "Stable" || nm === "Comp") {
+        var anc = wl || 0, first = 0;
+        for (var i = 0; i < l.points.length; i++) { var tq = l.points[i][0]; if (tq > anc && (!w5 || !isWeekend(tq))) { first = tq; break; } }
+        if (first) {
+          var fd = new Date(first * 1000), back = (fd.getUTCDay() + 6) % 7;
+          var mon = first - back * 86400 - fd.getUTCHours() * 3600 - fd.getUTCMinutes() * 60 - fd.getUTCSeconds();
+          fitHi = mon + (w5 ? 5 : 7) * 86400 - 1;
+          var win = parts.map(function (q) { return q.pts.filter(function (x) { return x.time <= fitHi && (!w5 || !isWeekend(x.time)); }); });
+          var rw = range(win);
+          if (isFinite(rw[0]) && rw[1] > rw[0]) r = rw; else fitHi = 0;
+        }
+      }
+      layers.push({ name: nm, color: l.color, width: width, style: l.style, parts: parts, vmin: r[0], vmax: r[1], fitHi: fitHi, screen: l.screen });
     });
   }
   // visible price window of the candles (same as the autoscaled right price scale incl. its margins)
@@ -278,13 +291,20 @@
   function remap(force) {
     if (!data || !data.package) return;
     var w = priceWindow(); if (!w) return;
-    if (!force && lastWin && Math.abs(w[0] - lastWin[0]) < 1e-12 && Math.abs(w[1] - lastWin[1]) < 1e-12) return;
-    lastWin = w;
+    var vr0 = chart.timeScale().getVisibleRange(), vk = vr0 ? vr0.from + ":" + vr0.to : "";   // v6: Stable refit follows the visible time span
+    if (!force && lastWin && lastWin.vk === vk && Math.abs(w[0] - lastWin[0]) < 1e-12 && Math.abs(w[1] - lastWin[1]) < 1e-12) return;
+    lastWin = w; w.vk = vk;
     var ui = data.package.ui || {}, pt = ui.pad_top != null ? ui.pad_top : 0.12, pb = ui.pad_bot != null ? ui.pad_bot : 0.05;
     var S = w[1] - w[0], lo = w[0] + pb * S, hi = w[1] - pt * S; if (hi <= lo) { lo = w[0]; hi = w[1]; }
+    var vr = chart.timeScale().getVisibleRange();
     layers.forEach(function (L) {
-      var sp = L.vmax - L.vmin;
-      var f = !L.screen ? function (v) { return v; } : sp > 0 ? function (v) { return lo + (v - L.vmin) / sp * (hi - lo); } : function () { return (lo + hi) / 2; };
+      var vmin = L.vmin, vmax = L.vmax;
+      // v6 (MT5 1.21): Stable also takes in every point on screen now, so it never leaves the window
+      if ((L.name === "Stable" || L.name === "Comp") && L.fitHi && vr) L.parts.forEach(function (q) { q.pts.forEach(function (x) {
+        if (x.v == null || x.time <= L.fitHi || x.time < vr.from || x.time > vr.to) return;
+        if (x.v < vmin) vmin = x.v; if (x.v > vmax) vmax = x.v; }); });
+      var sp = vmax - vmin;
+      var f = !L.screen ? function (v) { return v; } : sp > 0 ? function (v) { return lo + (v - vmin) / sp * (hi - lo); } : function () { return (lo + hi) / 2; };
       L.parts.forEach(function (q) { series[q.id].s.setData(q.pts.map(function (x) { return x.v == null ? { time: x.time } : { time: x.time, value: f(x.v) }; })); });
     });
   }
