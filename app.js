@@ -5,7 +5,12 @@
   var BOT = "iSpectrumAccessBot";
   var T = {
     en: {
-      h1: "Access and screenshots", lead: "Licence: pay by crypto or card. Screenshots and balance: crypto only. After payment you get an access key that activates in @iSpectrumAccessBot.",
+      title_off: "iSpectrum — access", title_on: "iSpectrum — access and screenshots",
+      desc_off: "iSpectrum licence (MT4 indicator, Private Research and Tutorials included). Pay by crypto (Crypto Pay) or card (Whop).",
+      desc_on: "iSpectrum licence (MT4 indicator, Private Research and Tutorials included) and projection screenshots. Licence: crypto (Crypto Pay) or card (Whop); screenshots: crypto only.",
+      h1: "Access", h1_on: "Access and screenshots",
+      lead: "Licence: pay by crypto or card. After payment you get an access key that activates in @iSpectrumAccessBot.",
+      lead_on: "Licence: pay by crypto or card. Screenshots and balance: crypto only. After payment you get an access key that activates in @iSpectrumAccessBot.",
       closed: "Payments are temporarily unavailable. Please check back later.",
       sub_title: "iSpectrum licence — 30 days", sub_per: "/ 30 days",
       sub_i1: "iSpectrum indicator for MT4 (MT5 EA coming)", sub_i2: "Download, MT4 account activation and licence management via @iSpectrumAccessBot", sub_i3: "Included: Private Research channel and Tutorials",
@@ -27,7 +32,12 @@
       terms: "Terms", privacy: "Privacy", starting: "Opening the payment page…",
     },
     ru: {
-      h1: "Доступ и скриншоты", lead: "Лицензия: оплата криптовалютой или картой. Скриншоты и баланс: только криптовалютой. После оплаты вы получите ключ доступа, который активируется в @iSpectrumAccessBot.",
+      title_off: "iSpectrum — доступ", title_on: "iSpectrum — доступ и скриншоты",
+      desc_off: "Лицензия iSpectrum (индикатор MT4, в комплекте Private Research и Tutorials). Оплата криптовалютой (Crypto Pay) или картой (Whop).",
+      desc_on: "Лицензия iSpectrum (индикатор MT4, в комплекте Private Research и Tutorials) и скриншоты проекций. Лицензия: криптовалюта (Crypto Pay) или карта (Whop); скриншоты: только криптовалюта.",
+      h1: "Доступ", h1_on: "Доступ и скриншоты",
+      lead: "Лицензия: оплата криптовалютой или картой. После оплаты вы получите ключ доступа, который активируется в @iSpectrumAccessBot.",
+      lead_on: "Лицензия: оплата криптовалютой или картой. Скриншоты и баланс: только криптовалютой. После оплаты вы получите ключ доступа, который активируется в @iSpectrumAccessBot.",
       closed: "Оплата временно недоступна. Пожалуйста, зайдите позже.",
       sub_title: "Лицензия iSpectrum — 30 дней", sub_per: "/ 30 дней",
       sub_i1: "Индикатор iSpectrum для MT4 (советник для MT5 — скоро)", sub_i2: "Скачивание, активация счёта MT4 и управление лицензией через @iSpectrumAccessBot", sub_i3: "В комплекте: канал Private Research и Tutorials",
@@ -56,20 +66,23 @@
   function t(k) { return T[lang][k]; }
   // card payments (Whop) are for the 30-day licence only; screenshots and balance are crypto only
   $$("[data-method=whop]").forEach(function (b) { if (b.getAttribute("data-buy") !== "sub30") b.parentNode.removeChild(b); });
+  var scrSalesOn = false;
   function render() {
     document.documentElement.lang = lang;
-    $$("[data-t]").forEach(function (el) { el.textContent = t(el.getAttribute("data-t")); });
+    document.title = t(scrSalesOn ? "title_on" : "title_off");
+    var md = document.querySelector('meta[name="description"]');
+    if (md) md.setAttribute("content", t(scrSalesOn ? "desc_on" : "desc_off"));
+    $$("[data-t]").forEach(function (node) {
+      var k = node.getAttribute("data-t");
+      if (k === "h1") k = scrSalesOn ? "h1_on" : "h1";
+      else if (k === "lead") k = scrSalesOn ? "lead_on" : "lead";
+      node.textContent = T[lang][k];
+    });
     $$(".lang button").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-lang") === lang); });
     if (current) showStatus(current.last);
   }
   $$(".lang button").forEach(function (b) { b.addEventListener("click", function () { lang = b.getAttribute("data-lang"); localStorage.setItem("isp_lang", lang); render(); }); });
-  var sel = { p: "scr1", usd: null };
-  $$("#scr_opts .opt").forEach(function (b) {
-    b.addEventListener("click", function () {
-      $$("#scr_opts .opt").forEach(function (x) { x.classList.remove("on"); }); b.classList.add("on");
-      sel = { p: b.getAttribute("data-p"), usd: b.getAttribute("data-usd") ? Number(b.getAttribute("data-usd")) : null };
-    });
-  });
+  var sel = { p: null, usd: null };
   // ---- orders kept in localStorage (id + poll token); the token never leaves this browser except to the shop API
   function saved() { try { return JSON.parse(localStorage.getItem("isp_orders") || "[]"); } catch (e) { return []; } }
   function save(list) { localStorage.setItem("isp_orders", JSON.stringify(list.slice(-10))); }
@@ -109,6 +122,7 @@
     showStatus(o.last || null); tick();
   }
   function start(product, method, usd) {
+    if (product !== "sub30" && ($("#scr_card").hidden || sel.p !== product)) return;
     var body = { product: product, method: method, lang: lang }; if (usd) body.usd = usd;
     $("#status").classList.add("show"); $("#st_body").textContent = t("starting");
     fetch(API + "/order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
@@ -122,18 +136,74 @@
   }
   $$("[data-buy]").forEach(function (b) {
     b.addEventListener("click", function () {
+      if (b.disabled) return;
       var m = b.getAttribute("data-method");
       if (m === "whop" && b.getAttribute("data-buy") !== "sub30") return;
-      if (b.getAttribute("data-buy") === "sub30") start("sub30", m); else start(sel.p, m, sel.usd);
+      if (b.getAttribute("data-buy") === "sub30") start("sub30", m);
+      else if (!$("#scr_card").hidden && sel.p) start(sel.p, m, sel.usd);
     });
   });
-  // ---- config: prices, methods, open/closed
+  // Screenshot single/pack/top-up stays hidden until /config says sales are on and lists those products.
+  // Absent screenshot_sales_enabled means on (same default as the shop). A pause, an omitted product, or a failed config must not leave a price or a buy button.
+  function positiveUsd(v) {
+    var n = typeof v === "number" ? v : (typeof v === "string" && v.trim() ? Number(v) : NaN);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+  function screenshotOffers(c) {
+    if (!c || c.screenshot_sales_enabled === false || !c.products) return [];
+    var p = c.products, out = [], one = positiveUsd(p.scr1 && p.scr1.usd), pack = positiveUsd(p.scr10 && p.scr10.usd);
+    if (one != null) out.push({ p: "scr1", usd: null, price: one, label: "o1" });
+    if (pack != null) out.push({ p: "scr10", usd: null, price: pack, label: "o10" });
+    var opts = p.topup && Array.isArray(p.topup.options) ? p.topup.options : [];
+    opts.forEach(function (item) {
+      var usd = positiveUsd(item);
+      if (usd != null) out.push({ p: "topup", usd: usd, price: usd, label: "otop" });
+    });
+    return out;
+  }
+  function hideScreenshotOffers() {
+    var card = $("#scr_card"), box = $("#scr_opts"), buy = $("[data-buy=scr]");
+    if (box) box.textContent = "";
+    if (card) card.hidden = true;
+    if (buy) buy.disabled = true;
+    sel = { p: null, usd: null };
+    if (scrSalesOn) { scrSalesOn = false; render(); }
+  }
+  function showScreenshotOffers(c) {
+    var offers = screenshotOffers(c);
+    var card = $("#scr_card"), box = $("#scr_opts"), buy = $("[data-buy=scr]");
+    if (!offers.length || !card || !box) { hideScreenshotOffers(); return; }
+    box.textContent = "";
+    offers.forEach(function (o, i) {
+      var b = el("button", "opt" + (i === 0 ? " on" : ""));
+      b.setAttribute("data-p", o.p);
+      if (o.usd != null) b.setAttribute("data-usd", String(o.usd));
+      var lab = el("b", null, t(o.label));
+      lab.setAttribute("data-t", o.label);
+      b.appendChild(lab);
+      b.appendChild(el("span", null, String(o.price) + " USDT"));
+      b.addEventListener("click", function () {
+        $$("#scr_opts .opt").forEach(function (x) { x.classList.remove("on"); });
+        b.classList.add("on");
+        sel = { p: o.p, usd: o.usd };
+      });
+      box.appendChild(b);
+    });
+    sel = { p: offers[0].p, usd: offers[0].usd };
+    card.hidden = false;
+    if (buy) buy.disabled = !(c.methods && c.methods.crypto);
+    var was = scrSalesOn;
+    scrSalesOn = true;
+    if (!was) render();
+  }
+  // ---- config: prices, methods, open/closed, per-product screenshot availability
   fetch(API + "/config", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (c) {
-    if (!c.enabled) { $("#closed").classList.add("show"); $$("[data-buy]").forEach(function (b) { b.disabled = true; }); return; }
+    if (!c || !c.enabled) { $("#closed").classList.add("show"); $$("[data-buy]").forEach(function (b) { b.disabled = true; }); hideScreenshotOffers(); return; }
     if (c.products && c.products.sub30) $("#sub_price").textContent = c.products.sub30.usd;
-    $$("[data-method=crypto]").forEach(function (b) { b.disabled = !c.methods.crypto; });
+    $$("[data-method=crypto]").forEach(function (b) { if (b.getAttribute("data-buy") === "scr") return; b.disabled = !c.methods.crypto; });
     $$("[data-method=whop]").forEach(function (b) { b.disabled = !c.methods.whop; });
-  }).catch(function () { $("#closed").classList.add("show"); $$("[data-buy]").forEach(function (b) { b.disabled = true; }); });
+    showScreenshotOffers(c);
+  }).catch(function () { $("#closed").classList.add("show"); $$("[data-buy]").forEach(function (b) { b.disabled = true; }); hideScreenshotOffers(); });
   // ---- returning from a payment page (?o=<id>, Whop adds &payment=&status=) or a pending order from earlier
   render();
   var oid = qs.get("o"), list = saved().filter(function (o) { return Date.now() - o.at < 3 * 86400000; });

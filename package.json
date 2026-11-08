@@ -1,0 +1,10 @@
+{
+  "name": "spectroom-pay",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/screenshot-offers.test.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0"
+  }
+}

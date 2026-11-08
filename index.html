@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>iSpectrum — access and screenshots</title>
-<meta name="description" content="iSpectrum licence (MT4 indicator, Private Research and Tutorials included) and projection screenshots. Licence: crypto (Crypto Pay) or card (Whop); screenshots: crypto only.">
+<title>iSpectrum — access</title>
+<meta name="description" content="iSpectrum licence (MT4 indicator, Private Research and Tutorials included). Pay by crypto (Crypto Pay) or card (Whop).">
 <meta name="robots" content="noindex">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://tosszbmacumhmmdyegol.supabase.co; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
@@ -42,19 +42,13 @@
     <p class="note" data-t="sub_note"></p>
   </section>
 
-  <section class="card">
+  <!-- Off until /config lists screenshot products and sales are enabled. No buy button or price before that. -->
+  <section class="card" id="scr_card" hidden>
     <h2 data-t="scr_title"></h2>
     <p class="note top0" data-t="scr_desc"></p>
-    <div class="opts" id="scr_opts">
-      <button class="opt on" data-p="scr1"><b data-t="o1"></b><span>2 USDT</span></button>
-      <button class="opt" data-p="scr10"><b data-t="o10"></b><span>15 USDT</span></button>
-      <button class="opt" data-p="topup" data-usd="10"><b data-t="otop"></b><span>10 USDT</span></button>
-      <button class="opt" data-p="topup" data-usd="15"><b data-t="otop"></b><span>15 USDT</span></button>
-      <button class="opt" data-p="topup" data-usd="25"><b data-t="otop"></b><span>25 USDT</span></button>
-      <button class="opt" data-p="topup" data-usd="50"><b data-t="otop"></b><span>50 USDT</span></button>
-    </div>
+    <div class="opts" id="scr_opts"></div>
     <div class="pay">
-      <button class="btn" data-buy="scr" data-method="crypto" data-t="pay_crypto"></button>
+      <button class="btn" data-buy="scr" data-method="crypto" data-t="pay_crypto" disabled></button>
     </div>
     <p class="note" data-t="scr_note"></p>
   </section>
