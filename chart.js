@@ -19,10 +19,11 @@
       busy_t: "Too many requests", busy_x: "Please wait about {n} s and try again.",
       err_t: "Data temporarily unavailable", err_x: "Please try again in a few minutes.", retry: "Retry", off_t: "The chart is switched off for now", loading: "Loading…",
       meta: "Package {v} · updated {u} · last M30 bar {b} · times {z} · prices: MT4 feed", nopkg: "No projection published for this instrument yet.",
-      Week: "Week", Intraday: "Intraday", Envelope: "Envelope", Stable: "Stable", Comp: "Comp", Middle: "Middle", Seasonal: "Seasonal", Background: "Background",
+      Week: "Week", Intraday: "Intraday", Envelope: "Envelope", Stable: "Stable", Comp: "Comp", Middle: "Middle", Seasonal: "Seasonal", SP: "SP", Background: "Background",
       tip: "{n}: click to show or hide",
       tab_bg: "Background from {n}", tab_nobg: "No background on this tab", collapse: "Hide / show the panel",
       line: "Line", line_tip: "Show / hide the {n} line", env_tip: "Envelope around the Intraday line",
+      sp_tip: "Show or hide the SP projection (timing of turning points). Not a price target.",
       wk_sync: "Week synced with the administrator", wk_own: "Week: your choice (Admin = sync)",
       prev: "Previous Week candidate in the ranking", next: "Next Week candidate in the ranking",
       auto_tip: "Auto: best score, chosen by the administrator at Monday 00:00 (now {c})",
@@ -53,10 +54,11 @@
       busy_t: "Слишком много запросов", busy_x: "Подождите около {n} с и попробуйте снова.",
       err_t: "Данные временно недоступны", err_x: "Попробуйте через несколько минут.", retry: "Повторить", off_t: "График пока выключен", loading: "Загрузка…",
       meta: "Пакет {v} · обновлён {u} · последний бар M30 {b} · время {z} · цены: поток MT4", nopkg: "Проекция по этому инструменту пока не опубликована.",
-      Week: "Week", Intraday: "Intraday", Envelope: "Envelope", Stable: "Stable", Comp: "Comp", Middle: "Middle", Seasonal: "Seasonal", Background: "Фон",
+      Week: "Week", Intraday: "Intraday", Envelope: "Envelope", Stable: "Stable", Comp: "Comp", Middle: "Middle", Seasonal: "Seasonal", SP: "SP", Background: "Фон",
       tip: "{n}: нажмите, чтобы показать или скрыть",
       tab_bg: "Фон от {n}", tab_nobg: "На этой вкладке фона нет", collapse: "Скрыть / показать панель",
       line: "Линия", line_tip: "Показать / скрыть линию {n}", env_tip: "Конверт вокруг линии Intraday",
+      sp_tip: "Показать или скрыть проекцию SP (сроки разворотов). Не ценовой ориентир.",
       wk_sync: "Week синхронизирован с администратором", wk_own: "Week: ваш выбор (Admin = синхронизация)",
       prev: "Предыдущий кандидат Week в рейтинге", next: "Следующий кандидат Week в рейтинге",
       auto_tip: "Auto: лучший балл, выбор администратора в понедельник 00:00 (сейчас {c})",
@@ -212,7 +214,7 @@
     layers = [];
     var p = d.package; if (!p) return;
     var ui = p.ui || {}, wl = ui.wlbc, dash = ui.insample_dash || [];
-    var order = ["Week", "Intraday", "Stable", "Comp", "Middle", "Seasonal"];
+    var order = ["SP", "Intraday", "Stable", "Comp", "Middle", "Seasonal"];
     var byName = {}; p.lines.forEach(function (l) { byName[l.name] = l; });
     var wv = weekValues();
     if (wv && byName.Week) byName.Week = Object.assign({}, byName.Week, { points: wv });
@@ -230,9 +232,15 @@
     var axIdx = {}; axis.forEach(function (x, i) { axIdx[x] = i; });
     order.forEach(function (nm) {
       var l = byName[nm]; if (!l) return;
-      var parts = [], width = l.width;
+      var parts = [], width = l.width, style = l.style;
       // v5: Intraday is exempt from the thinning (drawn 2..5 = package width, today 2 px like Stable / Week / Comp after thinning)
-      width = nm === "Intraday" ? Math.max(2, Math.min(5, width | 0 || 2)) : thin(width);
+      // v9: SP follows the admin export (teal, solid, width 3) and is not thinned
+      if (nm === "SP") {
+        l = Object.assign({}, l, { color: l.color || "#008080", style: (l.style == null ? 0 : l.style) });
+        style = l.style;
+        width = Math.max(1, Math.min(6, width | 0 || 3));
+      } else if (nm === "Intraday") width = Math.max(2, Math.min(5, width | 0 || 2));
+      else width = thin(width);
       if (nm === "Intraday" && l.fit && l.fit.length > 1) {
         var lbc = l.lbc || (l.points.length ? l.points[0][0] : Infinity);
         var fit = resample(l.fit.filter(function (q) { return q[0] <= lbc; }), axis);
@@ -484,33 +492,20 @@
     // row 2/3: controls of the open tab
     if (st.open) {
       var r = el("div", "drow"), n = st.tab;
-      if (hasLine(n)) r.appendChild(dbtn(t("line"), isOn(n), t("line_tip", { n: n }), function () { toggleLine(n); }));
+      if (n === "Week") {
+        if (hasLine("SP")) r.appendChild(dbtn(t("SP"), isOn("SP"), t("sp_tip"), function () { toggleLine("SP"); }));
+      } else if (hasLine(n)) r.appendChild(dbtn(t("line"), isOn(n), t("line_tip", { n: n }), function () { toggleLine(n); }));
       if (n === "Intraday") {
         if (idsFor("Envelope").length) r.appendChild(dbtn("E", isOn("Envelope"), t("env_tip"), function () { toggleLine("Envelope"); }));
         if (p.intraday_weeks) { var iw = el("span", "dtxt b", p.intraday_weeks), il = layers.filter(function (L) { return L.name === "Intraday"; })[0]; if (il) iw.style.color = il.color; r.appendChild(iw); }
       } else if (n === "Week") {
         ["Stable", "Comp"].forEach(function (m) { if (hasLine(m)) r.appendChild(dbtn(m, isOn(m), t("line_tip", { n: m }), function () { toggleLine(m); })); });
-        if (wk()) r.appendChild(el("span", "dtxt", st.mode === 3 ? t("wk_sync") : t("wk_own")));
       } else {
         var ph = p.phase && p.phase[n === "Middle" ? "middle" : "seasonal"];
         if (ph) { var a = el("span", "dtxt b", ph.l1); a.style.color = ph.color; r.appendChild(a); if (ph.l2) r.appendChild(el("span", "dtxt mute", ph.l2)); }
         else r.appendChild(el("span", "dtxt mute", (n === "Middle" ? st.hm : st.hs) ? t("in_bg") : t("not_bg")));
       }
       left.appendChild(r);
-      if (n === "Week" && wk()) {
-        var w = wk(), r2 = el("div", "drow"), tn = wTopN(), wl = layers.filter(function (L) { return L.name === "Week"; })[0];
-        r2.appendChild(dbtn("<", null, t("prev"), function () { weekClick("prev"); }, "sq"));
-        var tip = t("plate_tip"); for (var q = 0; q < w.c.length && q < 6; q++) tip += "\n" + (q + 1) + " " + candTxt(q);
-        var pl = el("span", "dplate" + (st.mode === 3 ? " on" : ""), plateTxt()); pl.title = tip; if (wl) pl.style.color = wl.color;
-        r2.appendChild(pl);
-        r2.appendChild(dbtn(">", null, t("next"), function () { weekClick("next"); }, "sq"));
-        r2.appendChild(dbtn("Auto", st.mode === 1, t("auto_tip", { c: w.c[w.auto] ? w.c[w.auto].id : "-" }), function () { weekClick("auto"); }));
-        r2.appendChild(dbtn("Top" + tn, st.mode === 2, t("top_tip"), function () { weekClick("top"); }));
-        r2.appendChild(dbtn("−", null, t("nm_tip"), function () { weekClick("nm"); }, "sq"));
-        r2.appendChild(dbtn("+", null, t("np_tip", { n: w.nmax }), function () { weekClick("np"); }, "sq"));
-        r2.appendChild(dbtn("Admin", st.mode === 3, t("adm_tip"), function () { weekClick("adm"); }));
-        left.appendChild(r2);
-      }
     }
     top.appendChild(left);
     // gauge: 21 segments bear..bull, marker and value (n/a when nothing is selected)
@@ -534,12 +529,12 @@
   }
 
   // ---------------- legend (one row, MT4 legend spec: swatch in the real colour/width/style + name) ----------------
-  var LG_ORDER = ["Week", "Intraday", "Envelope", "Stable", "Comp", "Middle", "Seasonal", "Background"];
+  var LG_ORDER = ["SP", "Intraday", "Envelope", "Stable", "Comp", "Middle", "Seasonal", "Background"];
   function defaultOn(name) {
     var ui = (data && data.package && data.package.ui) || {};
     if (name === "Background") return true;   // master switch; colours follow the Middle / Seasonal boxes
     if (name === "Envelope") return !!ui.env;
-    return (ui.visible || ["Week", "Comp"]).indexOf(name) >= 0;
+    return (ui.visible || ["SP", "Comp"]).indexOf(name) >= 0;
   }
   function isOn(name) { var v = vis[sym + ":" + name]; return v == null ? defaultOn(name) : !!v; }
   function idsFor(name) {
