@@ -283,7 +283,7 @@
           if (isFinite(rw[0]) && rw[1] > rw[0]) r = rw; else fitHi = 0;
         }
       }
-      layers.push({ name: nm, color: l.color, width: width, style: l.style, parts: parts, vmin: r[0], vmax: r[1], fitHi: fitHi, screen: l.screen });
+      layers.push({ name: nm, color: l.color, width: width, style: l.style, parts: parts, vmin: r[0], vmax: r[1], fitHi: fitHi, screen: nm === "SP" ? true : l.screen });   // v10: SP is screen-fitted like on the MT4 admin chart (export says screen:false)
     });
   }
   // visible price window of the candles (same as the autoscaled right price scale incl. its margins)
