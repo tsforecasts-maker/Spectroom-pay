@@ -24,6 +24,7 @@
       tab_bg: "Background from {n}", tab_nobg: "No background on this tab", collapse: "Hide / show the panel",
       line: "Line", line_tip: "Show / hide the {n} line", env_tip: "Envelope around the Intraday line",
       sp_tip: "Show or hide the SP projection (timing of turning points). Not a price target.",
+      line_miss: "{n} is not published for this instrument yet.",
       wk_sync: "Week synced with the administrator", wk_own: "Week: your choice (Admin = sync)",
       prev: "Previous Week candidate in the ranking", next: "Next Week candidate in the ranking",
       auto_tip: "Auto: best score, chosen by the administrator at Monday 00:00 (now {c})",
@@ -59,6 +60,7 @@
       tab_bg: "Фон от {n}", tab_nobg: "На этой вкладке фона нет", collapse: "Скрыть / показать панель",
       line: "Линия", line_tip: "Показать / скрыть линию {n}", env_tip: "Конверт вокруг линии Intraday",
       sp_tip: "Показать или скрыть проекцию SP (сроки разворотов). Не ценовой ориентир.",
+      line_miss: "{n} для этого инструмента пока не опубликован.",
       wk_sync: "Week синхронизирован с администратором", wk_own: "Week: ваш выбор (Admin = синхронизация)",
       prev: "Предыдущий кандидат Week в рейтинге", next: "Следующий кандидат Week в рейтинге",
       auto_tip: "Auto: лучший балл, выбор администратора в понедельник 00:00 (сейчас {c})",
@@ -493,14 +495,17 @@
     if (st.open) {
       var r = el("div", "drow"), n = st.tab;
       if (n === "Week") {
+        // v11: Week tab always shows SP, Comp, Stable like MT5 (Comp stays clickable even if the package has no Comp line yet)
         if (hasLine("SP")) r.appendChild(dbtn(t("SP"), isOn("SP"), t("sp_tip"), function () { toggleLine("SP"); }));
+        ["Comp", "Stable"].forEach(function (m) {
+          var tip = hasLine(m) ? t("line_tip", { n: m }) : t("line_miss", { n: m });
+          r.appendChild(dbtn(t(m), isOn(m), tip, function () { toggleLine(m); }));
+        });
       } else if (hasLine(n)) r.appendChild(dbtn(t("line"), isOn(n), t("line_tip", { n: n }), function () { toggleLine(n); }));
       if (n === "Intraday") {
         if (idsFor("Envelope").length) r.appendChild(dbtn("E", isOn("Envelope"), t("env_tip"), function () { toggleLine("Envelope"); }));
         if (p.intraday_weeks) { var iw = el("span", "dtxt b", p.intraday_weeks), il = layers.filter(function (L) { return L.name === "Intraday"; })[0]; if (il) iw.style.color = il.color; r.appendChild(iw); }
-      } else if (n === "Week") {
-        ["Stable", "Comp"].forEach(function (m) { if (hasLine(m)) r.appendChild(dbtn(m, isOn(m), t("line_tip", { n: m }), function () { toggleLine(m); })); });
-      } else {
+      } else if (n !== "Week") {
         var ph = p.phase && p.phase[n === "Middle" ? "middle" : "seasonal"];
         if (ph) { var a = el("span", "dtxt b", ph.l1); a.style.color = ph.color; r.appendChild(a); if (ph.l2) r.appendChild(el("span", "dtxt mute", ph.l2)); }
         else r.appendChild(el("span", "dtxt mute", (n === "Middle" ? st.hm : st.hs) ? t("in_bg") : t("not_bg")));
